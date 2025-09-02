@@ -225,7 +225,7 @@ public:
                             verifyCtx, utility::conversions::to_utf8string(m_uri.host()));
                     }
 #endif
-                    boost::asio::ssl::rfc2818_verification rfc2818(utility::conversions::to_utf8string(m_uri.host()));
+                    boost::asio::ssl::host_name_verification rfc2818(utility::conversions::to_utf8string(m_uri.host()));
                     return rfc2818(preverified, verifyCtx);
                 });
 
