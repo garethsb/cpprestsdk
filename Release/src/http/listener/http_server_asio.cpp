@@ -119,8 +119,16 @@ private:
 class hostport_listener
 {
 private:
+    // Outlives the hostport_listener so that an accept handler can find out it has been stopped
+    struct accept_guard
+    {
+        std::mutex mutex;
+        hostport_listener* listener;
+    };
+
     int m_backlog;
     std::unique_ptr<boost::asio::ip::tcp::acceptor> m_acceptor;
+    std::shared_ptr<accept_guard> m_accept_guard;
     std::map<std::string, http_listener_impl*> m_listeners;
     pplx::extensibility::reader_writer_lock_t m_listeners_lock;
 
@@ -166,7 +174,7 @@ public:
     void stop();
 
     void add_listener(const std::string& path, http_listener_impl* listener);
-    void remove_listener(const std::string& path, http_listener_impl* listener);
+    bool remove_listener(const std::string& path, http_listener_impl* listener);
 
     void internal_erase_connection(asio_server_connection*);
 
@@ -403,6 +411,7 @@ public:
     }
 
     void close();
+    void shutdown();
 
     asio_server_connection(const asio_server_connection&) = delete;
     asio_server_connection& operator=(const asio_server_connection&) = delete;
@@ -532,11 +541,16 @@ void hostport_listener::start()
     m_acceptor->bind(endpoint);
     m_acceptor->listen(0 != m_backlog ? m_backlog : socket_base::max_connections);
 
+    m_accept_guard = std::make_shared<accept_guard>();
+    m_accept_guard->listener = this;
+
     auto socket = new ip::tcp::socket(service);
     std::unique_ptr<ip::tcp::socket> usocket(socket);
-    m_acceptor->async_accept(*socket, [this, socket](const boost::system::error_code& ec) {
+    auto guard = m_accept_guard;
+    m_acceptor->async_accept(*socket, [guard, socket](const boost::system::error_code& ec) {
         std::unique_ptr<ip::tcp::socket> usocket(socket);
-        this->on_accept(std::move(usocket), ec);
+        std::lock_guard<std::mutex> lock(guard->mutex);
+        if (guard->listener) guard->listener->on_accept(std::move(usocket), ec);
     });
     usocket.release();
 }
@@ -552,6 +566,14 @@ void asio_server_connection::close()
         sock->shutdown(tcp::socket::shutdown_both, ec);
         sock->close(ec);
     }
+    get_request()._reply_if_not_already(status_codes::InternalError);
+}
+
+void asio_server_connection::shutdown()
+{
+    m_close = true;
+    boost::system::error_code ec;
+    m_socket->shutdown(tcp::socket::shutdown_both, ec);
     get_request()._reply_if_not_already(status_codes::InternalError);
 }
 
@@ -623,9 +645,11 @@ void hostport_listener::on_accept(std::unique_ptr<ip::tcp::socket> socket, const
         // spin off another async accept
         auto newSocket = new ip::tcp::socket(crossplat::threadpool::shared_instance().service());
         std::unique_ptr<ip::tcp::socket> usocket(newSocket);
-        m_acceptor->async_accept(*newSocket, [this, newSocket](const boost::system::error_code& ec) {
+        auto guard = m_accept_guard;
+        m_acceptor->async_accept(*newSocket, [guard, newSocket](const boost::system::error_code& ec) {
             std::unique_ptr<ip::tcp::socket> usocket(newSocket);
-            this->on_accept(std::move(usocket), ec);
+            std::lock_guard<std::mutex> lock(guard->mutex);
+            if (guard->listener) guard->listener->on_accept(std::move(usocket), ec);
         });
         usocket.release();
     }
@@ -1239,17 +1263,27 @@ will_deref_and_erase_t asio_server_connection::finish_request_response()
 
 void hostport_listener::stop()
 {
+    // waits for an accept handler that is already running; later ones do nothing
+    if (m_accept_guard)
+    {
+        std::lock_guard<std::mutex> lock(m_accept_guard->mutex);
+        m_accept_guard->listener = nullptr;
+    }
+
     // halt existing connections
     {
         std::lock_guard<std::mutex> lock(m_connections_lock);
         m_acceptor.reset();
         for (auto connection : m_connections)
         {
-            connection->close();
+            connection->shutdown();
         }
     }
 
     m_all_connections_complete.wait();
+
+    // wait for the connection that set the event to release the lock, since this may be destroyed next
+    std::lock_guard<std::mutex> lock(m_connections_lock);
 }
 
 void hostport_listener::add_listener(const std::string& path, http_listener_impl* listener)
@@ -1263,11 +1297,12 @@ void hostport_listener::add_listener(const std::string& path, http_listener_impl
         throw std::invalid_argument("Error: http_listener is already registered for this path");
 }
 
-void hostport_listener::remove_listener(const std::string& path, http_listener_impl*)
+bool hostport_listener::remove_listener(const std::string& path, http_listener_impl*)
 {
     pplx::extensibility::scoped_rw_lock_t lock(m_listeners_lock);
 
     if (m_listeners.erase(path) != 1) throw std::invalid_argument("Error: no http_listener found for this path");
+    return m_listeners.empty();
 }
 
 pplx::task<void> http_linux_server::start()
@@ -1382,16 +1417,21 @@ pplx::task<void> http_linux_server::unregister_listener(http_listener_impl* list
     auto parts = canonical_parts(listener->uri());
     auto hostport = parts.first;
     auto path = parts.second;
-    // First remove the listener from hostport listener
+    // First remove the listener from hostport listener, and the hostport listener when it has no other listeners
+    std::unique_ptr<hostport_listener> unused_hostport_listener;
     {
-        pplx::extensibility::scoped_read_lock_t lock(m_listeners_lock);
+        pplx::extensibility::scoped_rw_lock_t lock(m_listeners_lock);
         auto itr = m_listeners.find(hostport);
         if (itr == m_listeners.end())
         {
             throw std::invalid_argument("Error: no listener registered for that host");
         }
 
-        itr->second->remove_listener(path, listener);
+        if (itr->second->remove_listener(path, listener))
+        {
+            unused_hostport_listener = std::move(itr->second);
+            m_listeners.erase(itr);
+        }
     }
 
     // Second remove the listener form listener collection
@@ -1409,6 +1449,9 @@ pplx::task<void> http_linux_server::unregister_listener(http_listener_impl* list
     {
         pplx::extensibility::scoped_rw_lock_t lock(*pListenerLock);
     }
+
+    // Close the port, outside m_listeners_lock since its connections may need that lock to complete
+    unused_hostport_listener.reset();
 
     return pplx::task_from_result();
 }
