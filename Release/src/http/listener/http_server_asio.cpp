@@ -403,6 +403,7 @@ public:
     }
 
     void close();
+    void shutdown();
 
     asio_server_connection(const asio_server_connection&) = delete;
     asio_server_connection& operator=(const asio_server_connection&) = delete;
@@ -552,6 +553,14 @@ void asio_server_connection::close()
         sock->shutdown(tcp::socket::shutdown_both, ec);
         sock->close(ec);
     }
+    get_request()._reply_if_not_already(status_codes::InternalError);
+}
+
+void asio_server_connection::shutdown()
+{
+    m_close = true;
+    boost::system::error_code ec;
+    m_socket->shutdown(tcp::socket::shutdown_both, ec);
     get_request()._reply_if_not_already(status_codes::InternalError);
 }
 
@@ -1245,7 +1254,7 @@ void hostport_listener::stop()
         m_acceptor.reset();
         for (auto connection : m_connections)
         {
-            connection->close();
+            connection->shutdown();
         }
     }
 
