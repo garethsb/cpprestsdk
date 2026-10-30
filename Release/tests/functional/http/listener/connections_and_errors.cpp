@@ -15,7 +15,10 @@
 
 #include "stdafx.h"
 
+#include <chrono>
 #include <cpprest/http_client.h>
+#include <random>
+#include <thread>
 
 // For single_core test case.
 #if defined(_WIN32) && _MSC_VER < 1900
@@ -412,6 +415,73 @@ SUITE(connections_and_errors)
 
         listener.close().wait();
     }
+
+    TEST_FIXTURE(uri_address, reply_while_closing_last_listener)
+    {
+        // Close the last listener in the process, which stops the server, at random times while the response is written
+        const std::string body(64 * 1024, 'x');
+        std::mt19937 rng(std::random_device {}());
+        std::uniform_int_distribution<int> delay_us(0, 300);
+
+        for (int i = 0; i < 1000; ++i)
+        {
+            http_listener listener(m_uri);
+            pplx::task_completion_event<http_request> received;
+            listener.support([received](http_request request) { received.set(request); });
+            listener.open().wait();
+
+            ::http::client::http_client client(m_uri);
+            auto responseTask = client.request(methods::GET);
+            auto request = pplx::create_task(received).get();
+
+            const auto reply_after = std::chrono::microseconds(delay_us(rng));
+            const auto close_after = std::chrono::microseconds(delay_us(rng));
+            auto replyTask = pplx::create_task([=] {
+                std::this_thread::sleep_for(reply_after);
+                http_response response(status_codes::OK);
+                response.set_body(body);
+                return request.reply(response);
+            });
+            std::this_thread::sleep_for(close_after);
+            listener.close().wait();
+
+            // Depending on timing, the response may not be sent
+            try
+            {
+                replyTask.wait();
+            }
+            catch (const http_exception&)
+            {
+            }
+            try
+            {
+                responseTask.get().content_ready().wait();
+            }
+            catch (const http_exception&)
+            {
+            }
+        }
+    }
+
+#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
+    TEST_FIXTURE(uri_address, close_releases_port)
+    {
+        http_listener other(U("http://localhost:34570/"));
+        other.open().wait();
+
+        {
+            http_listener listener(m_uri);
+            listener.support([](http_request request) { request.reply(status_codes::OK); });
+            listener.open().wait();
+            listener.close().wait();
+        }
+
+        ::http::client::http_client client(m_uri);
+        VERIFY_THROWS(client.request(methods::GET).get(), http_exception);
+
+        other.close().wait();
+    }
+#endif
 }
 
 } // namespace listener
