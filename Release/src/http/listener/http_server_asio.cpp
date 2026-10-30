@@ -119,8 +119,16 @@ private:
 class hostport_listener
 {
 private:
+    // Outlives the hostport_listener so that an accept handler can find out it has been stopped
+    struct accept_guard
+    {
+        std::mutex mutex;
+        hostport_listener* listener;
+    };
+
     int m_backlog;
     std::unique_ptr<boost::asio::ip::tcp::acceptor> m_acceptor;
+    std::shared_ptr<accept_guard> m_accept_guard;
     std::map<std::string, http_listener_impl*> m_listeners;
     pplx::extensibility::reader_writer_lock_t m_listeners_lock;
 
@@ -533,11 +541,16 @@ void hostport_listener::start()
     m_acceptor->bind(endpoint);
     m_acceptor->listen(0 != m_backlog ? m_backlog : socket_base::max_connections);
 
+    m_accept_guard = std::make_shared<accept_guard>();
+    m_accept_guard->listener = this;
+
     auto socket = new ip::tcp::socket(service);
     std::unique_ptr<ip::tcp::socket> usocket(socket);
-    m_acceptor->async_accept(*socket, [this, socket](const boost::system::error_code& ec) {
+    auto guard = m_accept_guard;
+    m_acceptor->async_accept(*socket, [guard, socket](const boost::system::error_code& ec) {
         std::unique_ptr<ip::tcp::socket> usocket(socket);
-        this->on_accept(std::move(usocket), ec);
+        std::lock_guard<std::mutex> lock(guard->mutex);
+        if (guard->listener) guard->listener->on_accept(std::move(usocket), ec);
     });
     usocket.release();
 }
@@ -632,9 +645,11 @@ void hostport_listener::on_accept(std::unique_ptr<ip::tcp::socket> socket, const
         // spin off another async accept
         auto newSocket = new ip::tcp::socket(crossplat::threadpool::shared_instance().service());
         std::unique_ptr<ip::tcp::socket> usocket(newSocket);
-        m_acceptor->async_accept(*newSocket, [this, newSocket](const boost::system::error_code& ec) {
+        auto guard = m_accept_guard;
+        m_acceptor->async_accept(*newSocket, [guard, newSocket](const boost::system::error_code& ec) {
             std::unique_ptr<ip::tcp::socket> usocket(newSocket);
-            this->on_accept(std::move(usocket), ec);
+            std::lock_guard<std::mutex> lock(guard->mutex);
+            if (guard->listener) guard->listener->on_accept(std::move(usocket), ec);
         });
         usocket.release();
     }
@@ -1248,6 +1263,13 @@ will_deref_and_erase_t asio_server_connection::finish_request_response()
 
 void hostport_listener::stop()
 {
+    // waits for an accept handler that is already running; later ones do nothing
+    if (m_accept_guard)
+    {
+        std::lock_guard<std::mutex> lock(m_accept_guard->mutex);
+        m_accept_guard->listener = nullptr;
+    }
+
     // halt existing connections
     {
         std::lock_guard<std::mutex> lock(m_connections_lock);
