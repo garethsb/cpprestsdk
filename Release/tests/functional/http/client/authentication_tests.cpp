@@ -636,7 +636,8 @@ SUITE(authentication_tests)
 #endif // _WIN32
 
     // Fix for 522831 AV after failed authentication attempt
-    TEST_FIXTURE(uri_address, failed_authentication_attempt, "Ignore:Linux", "89", "Ignore:Apple", "89")
+    // apis.live.net now returns 400 Bad Request instead of 401 Unauthorized
+    TEST_FIXTURE(uri_address, failed_authentication_attempt, "Ignore", "apis.live.net")
     {
         handle_timeout([] {
             http_client_config config;
@@ -695,7 +696,8 @@ SUITE(authentication_tests)
         VERIFY_ARE_EQUAL(200, response.status_code());
     }
 
-    TEST_FIXTURE(uri_address, set_user_options_asio_https)
+    // apis.live.net now returns 400 Bad Request instead of 401 Unauthorized
+    TEST_FIXTURE(uri_address, set_user_options_asio_https, "Ignore", "apis.live.net")
     {
         handle_timeout([] {
             http_client_config config;

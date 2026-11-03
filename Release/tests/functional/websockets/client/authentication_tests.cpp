@@ -93,7 +93,8 @@ SUITE(authentication_tests)
         return false;
     }
 
-    TEST(ssl_test)
+    // echo.websocket.org now sends a "Request served by" message before it echoes anything
+    TEST(ssl_test, "Ignore", "echo.websocket.org")
     {
         websocket_client client;
         std::string body_str("hello");
