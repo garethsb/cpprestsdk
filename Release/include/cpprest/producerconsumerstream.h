@@ -520,7 +520,7 @@ private:
     /// <remarks>This should be called with the lock held</remarks>
     int_type read_byte(bool advance = true)
     {
-        _CharType value;
+        _CharType value{};
         auto read_size = this->read(&value, 1, advance);
         return read_size == 1 ? static_cast<int_type>(value) : traits::eof();
     }
@@ -537,7 +537,7 @@ private:
 
         size_t read = 0;
 
-        for (auto iter = begin(m_blocks); iter != std::end(m_blocks); ++iter)
+        for (auto iter = begin(m_blocks); iter != std::end(m_blocks) && read < count; ++iter)
         {
             auto block = *iter;
             auto read_from_block = block->read(ptr + read, count - read, advance);
@@ -545,7 +545,6 @@ private:
             read += read_from_block;
 
             _ASSERTE(count >= read);
-            if (read == count) break;
         }
 
         if (advance)

@@ -377,7 +377,7 @@ private:
     /// </summary>
     int_type read_byte(bool advance = true)
     {
-        _CharType value;
+        _CharType value{};
         auto read_size = this->read(&value, 1, advance);
         return read_size == 1 ? static_cast<int_type>(value) : traits::eof();
     }
@@ -391,13 +391,12 @@ private:
     {
         if (!can_satisfy(count)) return 0;
 
-        msl::safeint3::SafeInt<size_t> request_size(count);
-        msl::safeint3::SafeInt<size_t> read_size = request_size.Min(in_avail());
+        size_t read_size = (std::min)(count, in_avail());
 
         size_t newPos = m_current_position + read_size;
 
         auto readBegin = std::begin(m_data) + m_current_position;
-        auto readEnd = std::begin(m_data) + newPos;
+        auto readEnd = readBegin + read_size;
 
         std::copy(readBegin, readEnd, ptr);
 
@@ -406,7 +405,7 @@ private:
             update_current_position(newPos);
         }
 
-        return (size_t)read_size;
+        return read_size;
     }
 
     /// <summary>
