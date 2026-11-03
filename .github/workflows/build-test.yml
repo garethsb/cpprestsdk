@@ -29,7 +29,7 @@ jobs:
             libboost-random-dev libboost-regex-dev libboost-system-dev libboost-thread-dev
 
       - name: Configure
-        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DWERROR=OFF
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
 
       - name: Build
         run: cmake --build build
@@ -60,7 +60,6 @@ jobs:
           cmake -B build -A x64
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake"
           -DCPPREST_EXCLUDE_WEBSOCKETS=ON
-          -DWERROR=OFF
 
       - name: Build
         run: cmake --build build --config ${{ matrix.build_type }}
