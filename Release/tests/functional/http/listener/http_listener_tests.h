@@ -28,7 +28,7 @@ namespace listener
 class uri_address
 {
 public:
-    uri_address() : m_uri(U("http://localhost:34567/")), m_secure_uri(U("https://localhost:8443/"))
+    uri_address() : m_uri(U("http://localhost:24567/")), m_secure_uri(U("https://localhost:8443/"))
     {
         if (!s_dummy_listener)
             s_dummy_listener =

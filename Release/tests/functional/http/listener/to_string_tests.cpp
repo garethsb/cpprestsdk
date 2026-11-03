@@ -56,7 +56,7 @@ SUITE(to_string_tests)
             expected_headers[U("Connection")] = U("Keep-Alive");
             expected_headers[U("Content-Length")] = U("6");
             expected_headers[U("Content-Type")] = U("text/plain");
-            expected_headers[U("Host")] = U("localhost:34567");
+            expected_headers[U("Host")] = U("localhost:24567");
             expected_headers[U("User-Agent")] = U("test_http_client");
 
             // maybe to_string() should wait for the request to complete?

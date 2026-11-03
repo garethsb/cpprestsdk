@@ -171,7 +171,7 @@ SUITE(authentication_tests)
 
     TEST_FIXTURE(uri_address, proxy_auth_noseek, "Ignore:Linux", "88", "Ignore:Apple", "88")
     {
-        web::http::uri uri(U("http://localhost:34567/"));
+        web::http::uri uri(U("http://localhost:24567/"));
         test_http_server::scoped_server scoped(uri);
         http_client client(
             uri); // In this test, the request cannot be resent, so the username and password are not required
@@ -279,7 +279,7 @@ SUITE(authentication_tests)
     {
         pplx::task<void> t;
         {
-            web::http::uri uri(U("http://localhost:34569/"));
+            web::http::uri uri(U("http://localhost:24569/"));
             test_http_server::scoped_server scoped(uri);
             http_client_config client_config;
             web::credentials cred(U("some_user"), U("some_password"));
