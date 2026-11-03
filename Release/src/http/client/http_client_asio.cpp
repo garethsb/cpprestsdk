@@ -1133,7 +1133,11 @@ private:
         }
 #endif // CPPREST_PLATFORM_ASIO_CERT_VERIFICATION_AVAILABLE
 
+#if BOOST_VERSION >= 107300
         boost::asio::ssl::host_name_verification rfc2818(m_connection->cn_hostname());
+#else
+        boost::asio::ssl::rfc2818_verification rfc2818(m_connection->cn_hostname());
+#endif
         return rfc2818(preverified, verifyCtx);
     }
 
