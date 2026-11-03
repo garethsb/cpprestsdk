@@ -50,7 +50,7 @@ function(cpprest_find_boost)
     cpprestsdk_find_boost_android_package(Boost ${BOOST_VERSION} EXACT REQUIRED COMPONENTS random ${_boost_system} thread filesystem chrono atomic)
   else()
     # Boost.System is header-only from Boost 1.69, and Boost 1.89 removed its stub library
-    find_package(Boost REQUIRED)
+    find_package(Boost 1.66 REQUIRED)
     if(Boost_MAJOR_VERSION EQUAL 1 AND Boost_MINOR_VERSION LESS 69)
       set(_boost_system system)
     endif()

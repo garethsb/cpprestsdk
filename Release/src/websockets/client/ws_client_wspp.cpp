@@ -225,7 +225,11 @@ public:
                             verifyCtx, utility::conversions::to_utf8string(m_uri.host()));
                     }
 #endif
+#if BOOST_VERSION >= 107300
+                    boost::asio::ssl::host_name_verification rfc2818(utility::conversions::to_utf8string(m_uri.host()));
+#else
                     boost::asio::ssl::rfc2818_verification rfc2818(utility::conversions::to_utf8string(m_uri.host()));
+#endif
                     return rfc2818(preverified, verifyCtx);
                 });
 
