@@ -466,7 +466,7 @@ SUITE(connections_and_errors)
 #if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
     TEST_FIXTURE(uri_address, close_releases_port)
     {
-        http_listener other(U("http://localhost:34570/"));
+        http_listener other(U("http://localhost:24570/"));
         other.open().wait();
 
         {

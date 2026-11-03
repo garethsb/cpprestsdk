@@ -193,7 +193,7 @@ SUITE(connections_and_errors)
     // This test sends an SSL request to a non-SSL server and should fail on handshaking
     TEST_FIXTURE(uri_address, handshake_fail)
     {
-        web::http::uri ssl_uri(U("https://localhost:34568/"));
+        web::http::uri ssl_uri(U("https://localhost:24568/"));
 
         test_http_server::scoped_server scoped(m_uri);
 

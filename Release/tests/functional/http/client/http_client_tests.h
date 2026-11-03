@@ -28,7 +28,7 @@ namespace client
 class uri_address
 {
 public:
-    uri_address() : m_uri(U("http://localhost:34568/")) {}
+    uri_address() : m_uri(U("http://localhost:24568/")) {}
     web::http::uri m_uri;
 };
 

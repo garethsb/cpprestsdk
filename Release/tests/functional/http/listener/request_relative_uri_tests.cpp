@@ -101,7 +101,7 @@ SUITE(request_relative_uri_tests)
 
     TEST(listener_uri_empty_path)
     {
-        uri address(U("http://localhost:45678"));
+        uri address(U("http://localhost:25678"));
         http_listener listener(address);
         listener.open().wait();
         test_http_client::scoped_client client(address);
@@ -120,7 +120,7 @@ SUITE(request_relative_uri_tests)
 
     TEST(listener_invalid_encoded_uri)
     {
-        uri address(U("http://localhost:45678"));
+        uri address(U("http://localhost:25678"));
         http_listener listener(address);
         listener.open().wait();
         test_http_client::scoped_client client(address);

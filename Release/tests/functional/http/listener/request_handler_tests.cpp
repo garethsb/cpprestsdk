@@ -177,13 +177,13 @@ SUITE(request_handler_tests)
                 std::string utf8_response;
                 utf8_response.assign(p_response->m_data.begin(), p_response->m_data.end());
 #ifdef _WIN32
-                VERIFY_ARE_EQUAL("TRACE / HTTP/1.1\r\nConnection: Keep-Alive\r\nHost: localhost:34567\r\nUser-Agent: "
+                VERIFY_ARE_EQUAL("TRACE / HTTP/1.1\r\nConnection: Keep-Alive\r\nHost: localhost:24567\r\nUser-Agent: "
                                  "test_http_client\r\n\r\n",
                                  utf8_response);
 #else
                 VERIFY_ARE_EQUAL(
                     "TRACE / HTTP/1.1\r\nConnection: Keep-Alive\r\nContent-Length: 0\r\nContent-Type: text/plain; "
-                    "charset=utf-8\r\nHost: localhost:34567\r\nUser-Agent: test_http_client\r\n\r\n",
+                    "charset=utf-8\r\nHost: localhost:24567\r\nUser-Agent: test_http_client\r\n\r\n",
                     utf8_response);
 #endif
             })
@@ -226,14 +226,14 @@ SUITE(request_handler_tests)
 
     TEST_FIXTURE(uri_address, multiple_listeners)
     {
-        http_listener listener1(U("http://localhost:45678/path1"));
-        http_listener listener2(U("http://localhost:45678/path1/path2"));
-        http_listener listener3(U("http://localhost:45678/path3"));
+        http_listener listener1(U("http://localhost:25678/path1"));
+        http_listener listener2(U("http://localhost:25678/path1/path2"));
+        http_listener listener3(U("http://localhost:25678/path3"));
         listener1.open().wait();
         listener2.open().wait();
         listener3.open().wait();
 
-        test_http_client::scoped_client client(U("http://localhost:45678"));
+        test_http_client::scoped_client client(U("http://localhost:25678"));
         test_http_client* p_client = client.client();
 
         // send a request to the first listener
@@ -291,14 +291,14 @@ SUITE(request_handler_tests)
 
     TEST_FIXTURE(uri_address, unregister_while_processing)
     {
-        http_listener listener1(U("http://localhost:45679/path1"));
-        http_listener listener2(U("http://localhost:45679/path1/path2"));
+        http_listener listener1(U("http://localhost:25679/path1"));
+        http_listener listener2(U("http://localhost:25679/path1/path2"));
         listener1.open().wait();
         listener2.open().wait();
 
-        test_http_client::scoped_client client1(U("http://localhost:45679"));
+        test_http_client::scoped_client client1(U("http://localhost:25679"));
         test_http_client* p_client1 = client1.client();
-        test_http_client::scoped_client client2(U("http://localhost:45679"));
+        test_http_client::scoped_client client2(U("http://localhost:25679"));
         test_http_client* p_client2 = client2.client();
 
         // first listener is used to wait until a request comes into the second
@@ -484,10 +484,10 @@ SUITE(request_handler_tests)
         VERIFY_IS_TRUE(http_version::from_string("foo") == unknown);
         VERIFY_IS_TRUE(http_version::from_string("") == unknown);
 
-        http_listener listener(U("http://localhost:45678/path1"));
+        http_listener listener(U("http://localhost:25678/path1"));
         listener.open().wait();
 
-        test_http_client::scoped_client client(U("http://localhost:45678"));
+        test_http_client::scoped_client client(U("http://localhost:25678"));
         test_http_client* p_client = client.client();
 
         volatile unsigned long requestCount = 0;
@@ -517,10 +517,10 @@ SUITE(request_handler_tests)
 
     TEST_FIXTURE(uri_address, remote_address)
     {
-        http_listener listener(U("http://localhost:45678/path1"));
+        http_listener listener(U("http://localhost:25678/path1"));
         listener.open().wait();
 
-        test_http_client::scoped_client client(U("http://localhost:45678"));
+        test_http_client::scoped_client client(U("http://localhost:25678"));
         test_http_client* p_client = client.client();
 
         volatile unsigned long requestCount = 0;

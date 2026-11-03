@@ -31,7 +31,7 @@ SUITE(request_uri_tests)
     // Tests path specified in requests with non-empty base path in client constructor.
     TEST_FIXTURE(uri_address, path_non_empty_ctor)
     {
-        uri address(U("http://localhost:45678/base_path/"));
+        uri address(U("http://localhost:25678/base_path/"));
 
         // Path not starting with '/'.
         {
@@ -51,7 +51,7 @@ SUITE(request_uri_tests)
     // Tests path specified in requests with empty base path in client constructor.
     TEST_FIXTURE(uri_address, path_empty_ctor)
     {
-        uri address(U("http://localhost:45678"));
+        uri address(U("http://localhost:25678"));
 
         // NON empty path.
         {
@@ -68,7 +68,7 @@ SUITE(request_uri_tests)
         }
 
         // Empty base of '/' with request path starting with '/'.
-        address = uri(U("http://localhost:45678/"));
+        address = uri(U("http://localhost:25678/"));
         {
             test_http_server::scoped_server scoped(address);
             http_client client(address);

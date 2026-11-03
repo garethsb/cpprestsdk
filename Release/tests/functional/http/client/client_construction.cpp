@@ -48,7 +48,7 @@ SUITE(client_construction)
         const size_t num_paths = sizeof(paths) / sizeof(paths[0]);
         for (size_t i = 0; i < num_paths; ++i)
         {
-            uri address(U("http://localhost:55678") + paths[i]);
+            uri address(U("http://localhost:26678") + paths[i]);
             test_http_server::scoped_server scoped(address);
             http_client client(address);
             test_connection(scoped.server(), &client, expected_paths[i]);
@@ -84,7 +84,7 @@ SUITE(client_construction)
 
     TEST_FIXTURE(uri_address, client_construction_no_scheme)
     {
-        uri address(U("//localhost:34568/p/g"));
+        uri address(U("//localhost:24568/p/g"));
         test_http_server::scoped_server scoped(m_uri);
 
         http_client client(address);
