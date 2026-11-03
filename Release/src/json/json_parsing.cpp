@@ -701,6 +701,8 @@ int JSON_Parser<CharType>::convert_unicode_to_code_point()
 
 #define H_SURROGATE_START 0xD800
 #define H_SURROGATE_END 0xDBFF
+#define L_SURROGATE_START 0xDC00
+#define L_SURROGATE_END 0xDFFF
 
 template<typename CharType>
 inline bool JSON_Parser<CharType>::handle_unescape_char(Token& token)
@@ -738,7 +740,7 @@ inline bool JSON_Parser<CharType>::handle_unescape_char(Token& token)
                 }
                 int decoded2 = convert_unicode_to_code_point();
 
-                if (decoded2 == -1)
+                if (decoded2 < L_SURROGATE_START || decoded2 > L_SURROGATE_END)
                 {
                     return false;
                 }
@@ -747,6 +749,11 @@ inline bool JSON_Parser<CharType>::handle_unescape_char(Token& token)
                 convert_append_unicode_code_unit(token, compoundUTF16);
 
                 return true;
+            }
+
+            if (decoded >= L_SURROGATE_START && decoded <= L_SURROGATE_END)
+            {
+                return false;
             }
 
             // Construct the character based on the decoded number
@@ -767,7 +774,10 @@ bool JSON_Parser<CharType>::CompleteStringLiteral(Token& token)
     {
         if (ch == '\\')
         {
-            handle_unescape_char(token);
+            if (!handle_unescape_char(token))
+            {
+                return false;
+            }
         }
         else if (ch >= CharType(0x0) && ch < CharType(0x20))
         {
