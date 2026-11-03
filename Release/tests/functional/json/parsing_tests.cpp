@@ -358,6 +358,16 @@ SUITE(parsing_tests)
         VERIFY_ARE_EQUAL(emoji, str.as_string());
 
         VERIFY_PARSING_THROW(json::value::parse(U("\"\\u0klB\"")));
+
+        // High surrogate not followed by a low surrogate
+        VERIFY_PARSING_THROW(json::value::parse(U("\"\\ud800\"")));
+        VERIFY_PARSING_THROW(json::value::parse(U("\"\\ud800x\"")));
+        VERIFY_PARSING_THROW(json::value::parse(U("\"\\ud800\\u0041\"")));
+        VERIFY_PARSING_THROW(json::value::parse(U("\"\\ud800\\ud800\"")));
+
+        // Low surrogate without a high surrogate
+        VERIFY_PARSING_THROW(json::value::parse(U("\"\\udc00\"")));
+        VERIFY_PARSING_THROW(json::value::parse(U("\"\\u0041\\udc00\"")));
     }
 
     TEST(escaping_control_characters)
@@ -904,6 +914,25 @@ SUITE(parsing_tests)
         VERIFY_IS_TRUE(iStreamErr.value() > 0);
         VERIFY_IS_TRUE(parsedObject.is_null());
 #endif
+    }
+
+    TEST(parse_overload_invalid_surrogate)
+    {
+        const utility::string_t strs[] = {U("\"\\ud800\\u0041\""), U("\"\\udc00\"")};
+        for (const auto& str : strs)
+        {
+            std::error_code err;
+            json::value parsedObject = json::value::parse(str, err);
+            VERIFY_IS_TRUE(err.value() > 0);
+            VERIFY_IS_TRUE(parsedObject.is_null());
+
+            std::error_code streamErr;
+            utility::stringstream_t stream;
+            stream << str;
+            parsedObject = json::value::parse(stream, streamErr);
+            VERIFY_IS_TRUE(streamErr.value() > 0);
+            VERIFY_IS_TRUE(parsedObject.is_null());
+        }
     }
 
     TEST(youtube_api)
