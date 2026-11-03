@@ -240,7 +240,8 @@ SUITE(outside_tests)
 
     TEST(server_hostname_mismatch_ignored) { test_ignored_ssl_cert(U("https://wrong.host.badssl.com/")); }
 
-    TEST(server_hostname_host_override_after_upgrade)
+    // 198.35.26.96 no longer accepts connections for en.wikipedia.org
+    TEST(server_hostname_host_override_after_upgrade, "Ignore", "198.35.26.96")
     {
         http_client client(U("http://198.35.26.96/"));
         http_request req(methods::GET);
