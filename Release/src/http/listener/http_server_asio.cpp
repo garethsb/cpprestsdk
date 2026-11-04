@@ -1248,6 +1248,10 @@ will_deref_and_erase_t asio_server_connection::handle_response_written(const htt
 
 will_deref_and_erase_t asio_server_connection::finish_request_response()
 {
+    // reply while the connection is still registered, because erasing the last connection lets
+    // hostport_listener::stop() return, after which the server that sends the reply may be destroyed
+    get_request()._reply_if_not_already(status_codes::InternalError);
+
     // kill the connection
     m_p_parent->internal_erase_connection(this);
 
