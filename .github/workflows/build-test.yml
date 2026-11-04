@@ -41,9 +41,14 @@ jobs:
     name: ${{ matrix.os }} ${{ matrix.build_type }}
     strategy:
       fail-fast: false
+      # Two jobs rather than the full matrix, because GitHub warns that "Due to capacity constraints,
+      # jobs targeting macOS arm64 runners may experience longer queue times."
       matrix:
-        os: [macos-15, macos-26]
-        build_type: [Debug, Release]
+        include:
+          - os: macos-15
+            build_type: Release
+          - os: macos-26
+            build_type: Debug
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
