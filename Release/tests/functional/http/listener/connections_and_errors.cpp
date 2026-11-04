@@ -25,6 +25,17 @@
 #include <concrt.h>
 #endif
 
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+#else
+#include <netdb.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <unistd.h>
+#endif
+
 using namespace utility;
 using namespace web;
 using namespace web::http;
@@ -40,6 +51,66 @@ namespace http
 {
 namespace listener
 {
+// Sends request bytes that an HTTP client would not send, and returns the status line of the response
+static std::string send_raw_request(const web::http::uri& uri, const std::string& request)
+{
+#ifdef _WIN32
+    typedef SOCKET socket_t;
+    WSADATA wsa_data;
+    VERIFY_ARE_EQUAL(0, WSAStartup(MAKEWORD(2, 2), &wsa_data));
+    const auto close_socket = [](socket_t s) { closesocket(s); };
+    const socket_t invalid_socket = INVALID_SOCKET;
+#else
+    typedef int socket_t;
+    const auto close_socket = [](socket_t s) { close(s); };
+    const socket_t invalid_socket = -1;
+#endif
+
+    addrinfo hints = {};
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    addrinfo* addresses = nullptr;
+    const auto host = utility::conversions::to_utf8string(uri.host());
+    const auto port = std::to_string(uri.port());
+    VERIFY_ARE_EQUAL(0, getaddrinfo(host.c_str(), port.c_str(), &hints, &addresses));
+
+    socket_t s = invalid_socket;
+    for (auto address = addresses; address != nullptr; address = address->ai_next)
+    {
+        s = socket(address->ai_family, address->ai_socktype, address->ai_protocol);
+        if (s == invalid_socket) continue;
+        if (connect(s, address->ai_addr, static_cast<int>(address->ai_addrlen)) == 0) break;
+        close_socket(s);
+        s = invalid_socket;
+    }
+    freeaddrinfo(addresses);
+    VERIFY_IS_TRUE(s != invalid_socket);
+
+#ifdef _WIN32
+    DWORD timeout = 10000;
+#else
+    timeval timeout = {10, 0};
+#endif
+    setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout));
+
+    VERIFY_ARE_EQUAL(static_cast<int>(request.size()), send(s, request.data(), static_cast<int>(request.size()), 0));
+
+    std::string response;
+    char buffer[1024];
+    while (response.find("\r\n") == std::string::npos)
+    {
+        const auto received = recv(s, buffer, sizeof(buffer), 0);
+        if (received <= 0) break;
+        response.append(buffer, static_cast<size_t>(received));
+    }
+    close_socket(s);
+#ifdef _WIN32
+    WSACleanup();
+#endif
+
+    return response.substr(0, response.find("\r\n"));
+}
+
 SUITE(connections_and_errors)
 {
     TEST_FIXTURE(uri_address, close_listener_race, "Ignore", "825350")
@@ -461,6 +532,24 @@ SUITE(connections_and_errors)
             {
             }
         }
+    }
+
+    TEST_FIXTURE(uri_address, invalid_utf8_request)
+    {
+        http_listener listener(m_uri);
+        listener.support([](http_request request) { request.reply(status_codes::OK); });
+        listener.open().wait();
+
+        VERIFY_ARE_EQUAL("HTTP/1.1 400 Bad Request",
+                         send_raw_request(m_uri, "GET /\xFF HTTP/1.1\r\nHost: localhost\r\n\r\n"));
+
+#ifdef _UTF16_STRINGS
+        // header values are converted to UTF-16
+        VERIFY_ARE_EQUAL("HTTP/1.1 400 Bad Request",
+                         send_raw_request(m_uri, "GET / HTTP/1.1\r\nHost: localhost\r\nX-Test: \xFF\r\n\r\n"));
+#endif
+
+        listener.close().wait();
     }
 
 #if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)

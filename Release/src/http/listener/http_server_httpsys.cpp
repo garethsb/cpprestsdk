@@ -491,7 +491,7 @@ void windows_request_context::read_headers_io_completion(DWORD error_code, DWORD
             // some encoded and some not.
             m_msg.set_request_uri(utf8_to_utf16(m_request->pRawUrl));
         }
-        catch (const uri_exception& e)
+        catch (const std::exception& e) // may be std::range_error indicating invalid Unicode, or web::uri_exception
         {
             // If an exception occurred, finish processing the request below but
             // respond with BadRequest instead of dispatching to the user's
@@ -499,7 +499,17 @@ void windows_request_context::read_headers_io_completion(DWORD error_code, DWORD
             badRequestMsg = e.what();
         }
         m_msg.set_method(parse_request_method(m_request));
-        parse_http_headers(m_request->Headers, m_msg.headers());
+        try
+        {
+            parse_http_headers(m_request->Headers, m_msg.headers());
+        }
+        catch (const std::exception& e) // may be std::range_error indicating invalid Unicode
+        {
+            if (badRequestMsg.empty())
+            {
+                badRequestMsg = e.what();
+            }
+        }
 
         // See if we need to compress or decompress the incoming request body, and if so, prepare for it
         try
