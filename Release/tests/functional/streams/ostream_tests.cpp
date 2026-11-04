@@ -383,7 +383,7 @@ SUITE(ostream_tests)
         });
         VERIFY_THROWS(t2.get(), std::logic_error);
 
-        rawptr_buffer<std::string> buf3;
+        rawptr_buffer<char> buf3;
         auto t3 = pplx::create_task([&] {
             buf3.commit(8);
             buf3.commit(9);
