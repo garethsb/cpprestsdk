@@ -37,6 +37,38 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
+  macos:
+    name: ${{ matrix.os }} ${{ matrix.build_type }}
+    strategy:
+      fail-fast: false
+      # Two jobs rather than the full matrix, because GitHub warns that "Due to capacity constraints,
+      # jobs targeting macOS arm64 runners may experience longer queue times."
+      matrix:
+        include:
+          - os: macos-15
+            build_type: Release
+          - os: macos-26
+            build_type: Debug
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install dependencies
+        run: brew install ninja boost openssl@3
+
+      # Homebrew's websocketpp is 0.8.2, which does not build with Boost 1.87 or later
+      - name: Configure
+        run: >-
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DOPENSSL_ROOT_DIR="$(brew --prefix openssl@3)"
+          -DCPPREST_EXCLUDE_WEBSOCKETS=ON
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
   windows:
     name: ${{ matrix.os }} ${{ matrix.build_type }}
     strategy:

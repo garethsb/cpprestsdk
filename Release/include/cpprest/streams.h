@@ -75,18 +75,16 @@ struct Value2StringFormatter
 template<>
 struct Value2StringFormatter<uint8_t>
 {
+    // std::char_traits<uint8_t> is not required to exist, so format the bytes as a std::string
     template<typename T>
-    static std::basic_string<uint8_t> format(const T& val)
+    static std::string format(const T& val)
     {
-        std::basic_ostringstream<char> ss;
+        std::ostringstream ss;
         ss << val;
-        return reinterpret_cast<const uint8_t*>(ss.str().c_str());
+        return ss.str();
     }
 
-    static std::basic_string<uint8_t> format(const utf16string& val)
-    {
-        return format(utility::conversions::utf16_to_utf8(val));
-    }
+    static std::string format(const utf16string& val) { return utility::conversions::utf16_to_utf8(val); }
 };
 
 static const char* _in_stream_msg = "stream not set up for input of data";
@@ -262,22 +260,10 @@ public:
     /// Write the specified string to the output stream.
     /// </summary>
     /// <param name="str">Input string.</param>
-    pplx::task<size_t> print(const std::basic_string<CharType>& str) const
+    template<typename Traits, typename Alloc>
+    pplx::task<size_t> print(const std::basic_string<CharType, Traits, Alloc>& str) const
     {
-        pplx::task<size_t> result;
-        if (!_verify_and_return_task(details::_out_stream_msg, result)) return result;
-
-        if (str.empty())
-        {
-            return pplx::task_from_result<size_t>(0);
-        }
-        else
-        {
-            auto sharedStr = std::make_shared<std::basic_string<CharType>>(str);
-            return helper()->m_buffer.putn_nocopy(sharedStr->c_str(), sharedStr->size()).then([sharedStr](size_t size) {
-                return size;
-            });
-        }
+        return _print_string(str);
     }
 
     /// <summary>
@@ -294,7 +280,7 @@ public:
         if (!_verify_and_return_task(details::_out_stream_msg, result)) return result;
         // TODO in the future this could be improved to have Value2StringFormatter avoid another unnecessary copy
         // by putting the string on the heap before calling the print string overload.
-        return print(details::Value2StringFormatter<CharType>::format(val));
+        return _print_string(details::Value2StringFormatter<CharType>::format(val));
     }
 
     /// <summary>
@@ -413,6 +399,26 @@ private:
         auto buffer = helper()->m_buffer;
         if (!(buffer.exception() == nullptr)) std::rethrow_exception(buffer.exception());
         if (!buffer.can_write()) throw std::runtime_error(msg);
+    }
+
+    // StringType's character type has the same size as CharType, but may be a different type
+    template<typename StringType>
+    pplx::task<size_t> _print_string(const StringType& str) const
+    {
+        pplx::task<size_t> result;
+        if (!_verify_and_return_task(details::_out_stream_msg, result)) return result;
+
+        if (str.empty())
+        {
+            return pplx::task_from_result<size_t>(0);
+        }
+        else
+        {
+            auto sharedStr = std::make_shared<StringType>(str);
+            return helper()
+                ->m_buffer.putn_nocopy(reinterpret_cast<const CharType*>(sharedStr->c_str()), sharedStr->size())
+                .then([sharedStr](size_t size) { return size; });
+        }
     }
 
     std::shared_ptr<details::basic_ostream_helper<CharType>> helper() const
