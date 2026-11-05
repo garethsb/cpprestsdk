@@ -130,6 +130,10 @@ SUITE(json_numbers_tests)
 
     void test_double(double number, string_t str_rep)
     {
+        // The smallest doubles that are out of range for int64_t and uint64_t
+        constexpr double int64_limit = 9223372036854775808.0;   // 2^63
+        constexpr double uint64_limit = 18446744073709551616.0; // 2^64
+
         stringstream_t ss;
         ss << str_rep;
 
@@ -139,7 +143,7 @@ SUITE(json_numbers_tests)
 
         // If the number is within integral types limit and not decimal, it should be stored as one of the integral
         // types
-        VERIFY_ARE_EQUAL(number > LLONG_MIN && number < ULLONG_MAX && number == floor(number), num.is_integer());
+        VERIFY_ARE_EQUAL(number > LLONG_MIN && number < uint64_limit && number == floor(number), num.is_integer());
 
         // If it is outside the range, these methods should return false.
         // Note that at this point there is no guarantee that the number was stored as double.
@@ -149,10 +153,11 @@ SUITE(json_numbers_tests)
 
         if (number < 0 || number > UINT_MAX || number != floor(number)) VERIFY_IS_FALSE(num.as_number().is_uint32());
 
-        if (number < LLONG_MIN || number > LLONG_MAX || number != floor(number))
+        if (number < LLONG_MIN || number >= int64_limit || number != floor(number))
             VERIFY_IS_FALSE(num.as_number().is_int64());
 
-        if (number < 0 || number > ULLONG_MAX || number != floor(number)) VERIFY_IS_FALSE(num.as_number().is_uint64());
+        if (number < 0 || number >= uint64_limit || number != floor(number))
+            VERIFY_IS_FALSE(num.as_number().is_uint64());
     }
 
     void test_double(double d)
