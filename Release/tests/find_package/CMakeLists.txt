@@ -1,6 +1,6 @@
 # Builds a program against an installed cpprestsdk package, as another project would,
 # to check that the package's CMake config brings in everything cpprest needs
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.10)
 project(find_package_test CXX)
 
 find_package(cpprestsdk REQUIRED)
