@@ -250,6 +250,12 @@ function(add_casablanca_test NAME SOURCES_VAR)
       unittestpp
       ${ANDROID_LIBS}
     )
+    if(APPLE)
+      # Apple's ld-1167.5 merges functions whose code is identical but whose exception tables differ,
+      # such as the instantiations of helpers::VerifyException for different exception types,
+      # so that they share one exception table and catch the wrong exception
+      target_link_libraries(${NAME} PRIVATE -Wl,-no_deduplicate)
+    endif()
     if (BUILD_SHARED_LIBS)
       add_test(NAME ${NAME}
         WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
