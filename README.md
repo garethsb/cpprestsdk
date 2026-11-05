@@ -1,6 +1,7 @@
 # C++ REST SDK, Long-Term Support
 
-Microsoft has archived [microsoft/cpprestsdk](https://github.com/microsoft/cpprestsdk). This fork, maintained by the [cpprest-lts](https://github.com/cpprest-lts) organization, takes security fixes, fixes for major bugs, and changes needed to build with current compilers and dependencies. It does not plan new features or API changes. [Issue #15](https://github.com/cpprest-lts/cpprestsdk/issues/15) describes the scope and the plans.
+> [!NOTE]
+> Microsoft has archived [microsoft/cpprestsdk](https://github.com/microsoft/cpprestsdk). This fork, maintained by the [cpprest-lts](https://github.com/cpprest-lts) organization, takes security fixes, fixes for major bugs, and changes needed to build with current compilers and dependencies. It does not plan new features or API changes. [Issue #15](https://github.com/cpprest-lts/cpprestsdk/issues/15) describes the scope and the plans.
 
 
 ## Welcome!
