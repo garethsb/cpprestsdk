@@ -1,9 +1,6 @@
-#  [!WARNING] ARCHIVED: [The C++ REST SDK]
+# C++ REST SDK, Long-Term Support
 
-This repository is no longer maintained and has been archived. 
-
-- **Support**: No further issues or pull requests will be reviewed. You are free to fork this project if you wish to continue development independently.
-- **Alternatives**: Depending on your usage scenarios, alternatives to the C++ REST SDK include [libcurl](https://github.com/curl/curl) or [Boost beast](https://github.com/boostorg/beast). 
+Microsoft has archived [microsoft/cpprestsdk](https://github.com/microsoft/cpprestsdk). This fork, maintained by the [cpprest-lts](https://github.com/cpprest-lts) organization, takes security fixes, fixes for major bugs, and changes needed to build with current compilers and dependencies. It does not plan new features or API changes. [Issue #15](https://github.com/cpprest-lts/cpprestsdk/issues/15) describes the scope and the plans.
 
 
 ## Welcome!
