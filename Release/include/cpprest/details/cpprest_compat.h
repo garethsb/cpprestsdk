@@ -92,3 +92,16 @@
 #else
 #define CASABLANCA_DEPRECATED(x) __declspec(deprecated(x))
 #endif // CASABLANCA_DEPRECATION_NO_WARNINGS
+
+#if defined(_MSVC_LANG)
+#define CPPREST_CHECK_CXX_STD(ver) (_MSVC_LANG >= (ver))
+#else
+#define CPPREST_CHECK_CXX_STD(ver) (__cplusplus >= (ver))
+#endif
+
+// Before C++20, [=, this] is ill-formed; from C++20, [=] capturing this implicitly is deprecated
+#if CPPREST_CHECK_CXX_STD(202002L)
+#define CPPREST_CAPTURE_THIS ,this
+#else
+#define CPPREST_CAPTURE_THIS
+#endif
