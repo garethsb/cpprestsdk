@@ -1791,7 +1791,7 @@ SUITE(pplxtask_tests)
     TEST(TestInlineChunker)
     {
         const int numiter = 1000;
-        volatile int sum = 0;
+        std::atomic<int> sum{0};
         async_for(0,
                   1,
                   numiter,
