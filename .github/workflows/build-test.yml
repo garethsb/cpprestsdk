@@ -37,6 +37,13 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure -LE badssl
 
+      - name: Test the installed package
+        run: |
+          cmake --install build --prefix install
+          cmake -S Release/tests/find_package -B build-find-package -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_PREFIX_PATH="$PWD/install"
+          cmake --build build-find-package
+          build-find-package/find_package_test
+
       - name: Test with badssl.com
         continue-on-error: true
         run: ctest --test-dir build --output-on-failure -L badssl
