@@ -2,7 +2,7 @@ name: Build and Test
 
 on:
   push:
-    branches: [nmos-cpp]
+    branches: [cpprest-lts]
   pull_request:
   workflow_dispatch:
 
