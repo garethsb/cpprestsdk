@@ -40,7 +40,7 @@ Once you have the library, look at our [tutorial](https://github.com/Microsoft/c
 
 To use from CMake:
 ```cmake
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.10)
 project(main)
 
 find_package(cpprestsdk REQUIRED)
