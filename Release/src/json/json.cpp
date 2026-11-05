@@ -495,3 +495,15 @@ const web::json::details::json_error_category_impl& web::json::details::json_err
 #endif
     return instance;
 }
+
+#ifdef ENABLE_JSON_VALUE_VISUALIZER
+web::json::value::value(std::unique_ptr<details::_Value> v, value_type kind) : m_value(std::move(v)), m_kind(kind)
+#else
+web::json::value::value(std::unique_ptr<details::_Value> v) : m_value(std::move(v))
+#endif
+{
+}
+
+web::json::value::~value() CPPREST_NOEXCEPT
+{
+}

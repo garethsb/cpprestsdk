@@ -214,6 +214,11 @@ public:
     /// <returns>The JSON value object that contains the result of the assignment.</returns>
     _ASYNCRTIMP value& operator=(value&&) CPPREST_NOEXCEPT;
 
+    /// <summary>
+    /// Destructor
+    /// </summary>
+    _ASYNCRTIMP ~value() CPPREST_NOEXCEPT;
+
     // Static factories
 
     /// <summary>
@@ -737,12 +742,10 @@ private:
     _ASYNCRTIMP void format(std::basic_string<char>& string) const;
 
 #ifdef ENABLE_JSON_VALUE_VISUALIZER
-    explicit value(std::unique_ptr<details::_Value> v, value_type kind) : m_value(std::move(v)), m_kind(kind)
+    _ASYNCRTIMP explicit value(std::unique_ptr<details::_Value> v, value_type kind);
 #else
-    explicit value(std::unique_ptr<details::_Value> v) : m_value(std::move(v))
+    _ASYNCRTIMP explicit value(std::unique_ptr<details::_Value> v);
 #endif
-    {
-    }
 
     std::unique_ptr<details::_Value> m_value;
 #ifdef ENABLE_JSON_VALUE_VISUALIZER
