@@ -272,19 +272,19 @@ static bool matched_properties(const UnitTest::TestProperties& test_props)
     // It requires a certain global setting to be fulfilled to execute.
     if (test_props.Has("Requires"))
     {
-        const std::string requires = test_props.Get("Requires");
+        const std::string requires_prop = test_props.Get("Requires");
         std::vector<std::string> requirements;
 
         // Can be multiple requirements, a semi colon seperated list
-        std::string::size_type pos = requires.find_first_of(';');
+        std::string::size_type pos = requires_prop.find_first_of(';');
         std::string::size_type last_pos = 0;
         while (pos != std::string::npos)
         {
-            requirements.push_back(requires.substr(last_pos, pos - last_pos));
+            requirements.push_back(requires_prop.substr(last_pos, pos - last_pos));
             last_pos = pos + 1;
-            pos = requires.find_first_of(';', last_pos);
+            pos = requires_prop.find_first_of(';', last_pos);
         }
-        requirements.push_back(requires.substr(last_pos));
+        requirements.push_back(requires_prop.substr(last_pos));
         for (auto iter = requirements.begin(); iter != requirements.end(); ++iter)
         {
             if (!UnitTest::GlobalSettings::Has(to_lower(*iter)))

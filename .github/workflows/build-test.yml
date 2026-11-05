@@ -41,6 +41,38 @@ jobs:
         continue-on-error: true
         run: ctest --test-dir build --output-on-failure -L badssl
 
+  clang:
+    name: ubuntu-26.04 Clang C++23 ${{ matrix.build_type }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang ninja-build libssl-dev zlib1g-dev libwebsocketpp-dev \
+            libboost-atomic-dev libboost-chrono-dev libboost-date-time-dev libboost-filesystem-dev \
+            libboost-random-dev libboost-regex-dev libboost-system-dev libboost-thread-dev
+
+      - name: Configure
+        run: >-
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_STANDARD=23
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure -LE badssl
+
+      - name: Test with badssl.com
+        continue-on-error: true
+        run: ctest --test-dir build --output-on-failure -L badssl
+
   macos:
     name: ${{ matrix.os }} ${{ matrix.build_type }}
     strategy:
