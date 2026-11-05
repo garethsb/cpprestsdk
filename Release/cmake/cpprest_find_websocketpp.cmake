@@ -18,7 +18,12 @@ function(cpprest_find_websocketpp)
   cpprest_find_openssl()
 
   add_library(cpprestsdk_websocketpp_internal INTERFACE)
-  target_include_directories(cpprestsdk_websocketpp_internal INTERFACE "$<BUILD_INTERFACE:${WEBSOCKETPP_INCLUDE_DIR}>")
+  # Package managers such as Conan may define only the websocketpp::websocketpp target, not WEBSOCKETPP_INCLUDE_DIR
+  if(WEBSOCKETPP_FOUND AND TARGET websocketpp::websocketpp)
+    target_link_libraries(cpprestsdk_websocketpp_internal INTERFACE "$<BUILD_INTERFACE:websocketpp::websocketpp>")
+  else()
+    target_include_directories(cpprestsdk_websocketpp_internal INTERFACE "$<BUILD_INTERFACE:${WEBSOCKETPP_INCLUDE_DIR}>")
+  endif()
   target_link_libraries(cpprestsdk_websocketpp_internal
     INTERFACE
       cpprestsdk_boost_internal
