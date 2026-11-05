@@ -218,16 +218,19 @@ SUITE(outside_tests)
     }
 #endif // !defined(__cplusplus_winrt)
 
-    TEST(server_selfsigned_cert) { test_failed_ssl_cert(U("https://self-signed.badssl.com/")); }
+    TEST(server_selfsigned_cert, "Requires", "badssl") { test_failed_ssl_cert(U("https://self-signed.badssl.com/")); }
 
 #if !defined(__cplusplus_winrt)
-    TEST(server_selfsigned_cert_ignored) { test_ignored_ssl_cert(U("https://self-signed.badssl.com/")); }
+    TEST(server_selfsigned_cert_ignored, "Requires", "badssl")
+    {
+        test_ignored_ssl_cert(U("https://self-signed.badssl.com/"));
+    }
 #endif // !defined(__cplusplus_winrt)
 
-    TEST(server_hostname_mismatch) { test_failed_ssl_cert(U("https://wrong.host.badssl.com/")); }
+    TEST(server_hostname_mismatch, "Requires", "badssl") { test_failed_ssl_cert(U("https://wrong.host.badssl.com/")); }
 
 #if !defined(__cplusplus_winrt) && !defined(CPPREST_FORCE_HTTP_CLIENT_WINHTTPPAL)
-    TEST(server_hostname_host_override)
+    TEST(server_hostname_host_override, "Requires", "badssl")
     {
         handle_timeout([] {
             http_client client(U("https://wrong.host.badssl.com/"));
@@ -238,7 +241,10 @@ SUITE(outside_tests)
         });
     }
 
-    TEST(server_hostname_mismatch_ignored) { test_ignored_ssl_cert(U("https://wrong.host.badssl.com/")); }
+    TEST(server_hostname_mismatch_ignored, "Requires", "badssl")
+    {
+        test_ignored_ssl_cert(U("https://wrong.host.badssl.com/"));
+    }
 
     // 198.35.26.96 no longer accepts connections for en.wikipedia.org
     TEST(server_hostname_host_override_after_upgrade, "Ignore", "198.35.26.96")
@@ -251,29 +257,48 @@ SUITE(outside_tests)
     }
 #endif // !defined(__cplusplus_winrt) && !defined(CPPREST_FORCE_HTTP_CLIENT_WINHTTPPAL)
 
-    TEST(server_cert_expired) { test_failed_ssl_cert(U("https://expired.badssl.com/")); }
+    TEST(server_cert_expired, "Requires", "badssl") { test_failed_ssl_cert(U("https://expired.badssl.com/")); }
 
 #if !defined(__cplusplus_winrt)
-    TEST(server_cert_expired_ignored) { test_ignored_ssl_cert(U("https://expired.badssl.com/")); }
+    TEST(server_cert_expired_ignored, "Requires", "badssl") { test_ignored_ssl_cert(U("https://expired.badssl.com/")); }
 #endif // !defined(__cplusplus_winrt)
 
-    TEST(server_cert_revoked, "Ignore:Android", "229", "Ignore:Apple", "229", "Ignore:Linux", "229")
+    TEST(server_cert_revoked,
+         "Requires",
+         "badssl",
+         "Ignore:Android",
+         "229",
+         "Ignore:Apple",
+         "229",
+         "Ignore:Linux",
+         "229")
     {
         test_failed_ssl_cert(U("https://revoked.badssl.com/"));
     }
 
 #if !defined(__cplusplus_winrt)
-    TEST(server_cert_revoked_ignored) { test_ignored_ssl_cert(U("https://revoked.badssl.com/")); }
+    TEST(server_cert_revoked_ignored, "Requires", "badssl") { test_ignored_ssl_cert(U("https://revoked.badssl.com/")); }
 #endif // !defined(__cplusplus_winrt)
 
-    TEST(server_cert_untrusted) { test_failed_ssl_cert(U("https://untrusted-root.badssl.com/")); }
+    TEST(server_cert_untrusted, "Requires", "badssl") { test_failed_ssl_cert(U("https://untrusted-root.badssl.com/")); }
 
 #if !defined(__cplusplus_winrt)
-    TEST(server_cert_untrusted_ignored) { test_ignored_ssl_cert(U("https://untrusted-root.badssl.com/")); }
+    TEST(server_cert_untrusted_ignored, "Requires", "badssl")
+    {
+        test_ignored_ssl_cert(U("https://untrusted-root.badssl.com/"));
+    }
 #endif // !defined(__cplusplus_winrt)
 
 #if !defined(__cplusplus_winrt)
-    TEST(ignore_server_cert_invalid, "Ignore:Android", "229", "Ignore:Apple", "229", "Ignore:Linux", "229")
+    TEST(ignore_server_cert_invalid,
+         "Requires",
+         "badssl",
+         "Ignore:Android",
+         "229",
+         "Ignore:Apple",
+         "229",
+         "Ignore:Linux",
+         "229")
     {
         handle_timeout([] {
             http_client_config config;

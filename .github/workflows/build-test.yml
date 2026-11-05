@@ -35,7 +35,11 @@ jobs:
         run: cmake --build build
 
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --output-on-failure -LE badssl
+
+      - name: Test with badssl.com
+        continue-on-error: true
+        run: ctest --test-dir build --output-on-failure -L badssl
 
   macos:
     name: ${{ matrix.os }} ${{ matrix.build_type }}
@@ -67,7 +71,11 @@ jobs:
         run: cmake --build build
 
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --output-on-failure -LE badssl
+
+      - name: Test with badssl.com
+        continue-on-error: true
+        run: ctest --test-dir build --output-on-failure -L badssl
 
   windows:
     name: ${{ matrix.os }} ${{ matrix.build_type }}
@@ -97,4 +105,8 @@ jobs:
         run: cmake --build build --config ${{ matrix.build_type }}
 
       - name: Test
-        run: ctest --test-dir build -C ${{ matrix.build_type }} --output-on-failure
+        run: ctest --test-dir build -C ${{ matrix.build_type }} --output-on-failure -LE badssl
+
+      - name: Test with badssl.com
+        continue-on-error: true
+        run: ctest --test-dir build -C ${{ matrix.build_type }} --output-on-failure -L badssl

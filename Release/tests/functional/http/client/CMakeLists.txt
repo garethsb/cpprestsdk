@@ -27,6 +27,13 @@ set(SOURCES
 )
 
 add_casablanca_test(httpclient_test SOURCES)
+if(BUILD_SHARED_LIBS)
+  add_test(NAME httpclient_test_badssl
+    WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+    COMMAND test_runner /badssl /select:@Requires=badssl $<TARGET_FILE_NAME:httpclient_test>
+  )
+  set_tests_properties(httpclient_test_badssl PROPERTIES LABELS badssl)
+endif()
 if(TEST_LIBRARY_TARGET_TYPE STREQUAL "OBJECT")
   target_include_directories(httpclient_test PRIVATE ../utilities/include)
 else()
