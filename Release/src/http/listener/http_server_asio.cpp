@@ -17,6 +17,7 @@
 #include <boost/algorithm/string/find.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/read_until.hpp>
+#include <cctype>
 #include <set>
 #include <sstream>
 
@@ -424,7 +425,7 @@ private:
     will_deref_and_erase_t handle_headers();
     will_deref_t handle_body(const boost::system::error_code& ec);
     will_deref_t handle_chunked_header(const boost::system::error_code& ec);
-    will_deref_t handle_chunked_body(const boost::system::error_code& ec, int toWrite);
+    will_deref_t handle_chunked_body(const boost::system::error_code& ec, size_t toWrite);
     will_deref_and_erase_t dispatch_request_to_listener();
     will_erase_from_parent_t do_response()
     {
@@ -872,10 +873,22 @@ will_deref_t asio_server_connection::handle_chunked_header(const boost::system::
     {
         std::istream is(&m_request_buf);
         is.imbue(std::locale::classic());
-        int len;
-        is >> std::hex >> len;
-        m_request_buf.consume(CRLF.size());
-        m_read += len;
+        std::string line;
+        std::getline(is, line);
+
+        // the chunk size is hex digits, optionally followed by chunk extensions, which are ignored
+        std::istringstream sizeLine(line);
+        sizeLine.imbue(std::locale::classic());
+        int len = -1;
+        if (!line.empty() && std::isxdigit(static_cast<unsigned char>(line[0]))) sizeLine >> std::hex >> len;
+        const auto next = sizeLine.peek();
+        if (len < 0 || sizeLine.fail() || line.back() != '\r' ||
+            (next != '\r' && next != ';' && next != ' ' && next != '\t'))
+        {
+            requestImpl->_complete(0, std::make_exception_ptr(http_exception("Invalid chunked request header")));
+            return deref();
+        }
+
         if (len == 0)
         {
             requestImpl->_complete(m_read);
@@ -883,15 +896,17 @@ will_deref_t asio_server_connection::handle_chunked_header(const boost::system::
         }
         else
         {
-            async_read_until_buffersize(len + 2, [this, len](const boost::system::error_code& ec, size_t) {
-                (will_deref_t) this->handle_chunked_body(ec, len);
-            });
+            const auto toWrite = static_cast<size_t>(len);
+            async_read_until_buffersize((std::min)(ChunkSize, toWrite),
+                                        [this, toWrite](const boost::system::error_code& ec, size_t) {
+                                            (will_deref_t) this->handle_chunked_body(ec, toWrite);
+                                        });
             return will_deref_t {};
         }
     }
 }
 
-will_deref_t asio_server_connection::handle_chunked_body(const boost::system::error_code& ec, int toWrite)
+will_deref_t asio_server_connection::handle_chunked_body(const boost::system::error_code& ec, size_t toWrite)
 {
     auto requestImpl = get_request()._get_impl();
     if (ec)
@@ -899,10 +914,22 @@ will_deref_t asio_server_connection::handle_chunked_body(const boost::system::er
         requestImpl->_complete(0, std::make_exception_ptr(http_exception(ec.value())));
         return deref();
     }
+    else if (toWrite == 0) // have read the chunk data, which must be followed by CRLF
+    {
+        if (std::string(static_cast<const char*>(m_request_buf.data().data()), CRLF.size()) != CRLF)
+        {
+            requestImpl->_complete(0, std::make_exception_ptr(http_exception("Invalid chunked request body")));
+            return deref();
+        }
+        m_request_buf.consume(CRLF.size());
+        return async_handle_chunked_header();
+    }
     else
     {
+        // write the chunk data as it arrives, rather than reading the whole chunk into m_request_buf
+        const auto writeSize = (std::min)(m_request_buf.size(), toWrite);
         auto writebuf = requestImpl->outstream().streambuf();
-        writebuf.putn_nocopy(static_cast<const uint8_t*>(m_request_buf.data().data()), toWrite)
+        writebuf.putn_nocopy(static_cast<const uint8_t*>(m_request_buf.data().data()), writeSize)
             .then([= CPPREST_CAPTURE_THIS](pplx::task<size_t> writeChunkTask) -> will_deref_t {
                 try
                 {
@@ -914,8 +941,14 @@ will_deref_t asio_server_connection::handle_chunked_body(const boost::system::er
                     return deref();
                 }
 
-                m_request_buf.consume(2 + toWrite);
-                return async_handle_chunked_header();
+                m_request_buf.consume(writeSize);
+                m_read += writeSize;
+                const auto remaining = toWrite - writeSize;
+                async_read_until_buffersize(remaining != 0 ? (std::min)(ChunkSize, remaining) : CRLF.size(),
+                                            [this, remaining](const boost::system::error_code& ec, size_t) {
+                                                (will_deref_t) this->handle_chunked_body(ec, remaining);
+                                            });
+                return will_deref_t {};
             });
         return will_deref_t {};
     }
