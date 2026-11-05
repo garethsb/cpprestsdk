@@ -38,6 +38,8 @@
 #include <cstring>
 #include <memory>
 #include <string>
+#include <type_traits>
+#include <utility>
 
 #ifndef _WIN32
 #include <boost/locale/encoding_utf.hpp>
@@ -62,28 +64,23 @@ inline std::string utf16_to_utf8(const std::basic_string<utf16char>& w)
 #endif
 }
 
-typedef char yes;
-typedef char (&no)[2];
-
-struct anyx
+// A deleted operator<<, such as the one for char16_t from C++20, counts as unsupported
+template<typename StreamType, typename T, typename = void>
+struct support_stream_write_one : std::false_type
 {
-    template<typename T>
-    anyx(const T&);
 };
-no operator<<(const anyx&, const anyx&);
 
-template<typename T>
-yes check(T const&);
-no check(no);
+template<typename StreamType, typename T>
+struct support_stream_write_one<StreamType, T, decltype(void(std::declval<StreamType&>() << std::declval<const T&>()))>
+    : std::true_type
+{
+};
 
 template<typename StreamType, typename T1, typename T2>
 struct support_stream_write
 {
-    static StreamType& stream;
-    static T1& x;
-    static T2& y;
     static const bool value =
-        (sizeof(check(stream << x)) == sizeof(yes)) && (sizeof(check(stream << y)) == sizeof(yes));
+        support_stream_write_one<StreamType, T1>::value && support_stream_write_one<StreamType, T2>::value;
 };
 
 template<typename T1, typename T2>
