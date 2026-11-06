@@ -21,12 +21,40 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The Ubuntu package mirror is sometimes very slow, so keep the downloaded packages. The key changes
+      # each week, so that the cache picks up package updates.
+      - name: Get the week
+        id: week
+        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the Ubuntu packages
+        id: restore-debs
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/debs
+          key: debs-${{ github.job }}-${{ matrix.os }}-${{ hashFiles('.github/workflows/build-test.yml') }}-${{ steps.week.outputs.week }}
+          restore-keys: |
+            debs-${{ github.job }}-${{ matrix.os }}-${{ hashFiles('.github/workflows/build-test.yml') }}-
+            debs-${{ github.job }}-${{ matrix.os }}-
+
+      # autoclean removes the packages that have been superseded, so that the cache does not keep growing
       - name: Install dependencies
         run: |
+          mkdir -p "$RUNNER_TEMP/debs/partial"
           sudo apt-get update
-          sudo apt-get install -y ninja-build libssl-dev zlib1g-dev libwebsocketpp-dev \
+          sudo apt-get install -y -o Dir::Cache::Archives="$RUNNER_TEMP/debs" \
+            ninja-build libssl-dev zlib1g-dev libwebsocketpp-dev \
             libboost-atomic-dev libboost-chrono-dev libboost-date-time-dev libboost-filesystem-dev \
             libboost-random-dev libboost-regex-dev libboost-system-dev libboost-thread-dev
+          sudo apt-get autoclean -o Dir::Cache::Archives="$RUNNER_TEMP/debs"
+          sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/debs"
+
+      - name: Save the Ubuntu packages
+        if: steps.restore-debs.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}/debs
+          key: ${{ steps.restore-debs.outputs.cache-primary-key }}
 
       - name: Configure
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
@@ -58,12 +86,37 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Get the week
+        id: week
+        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the Ubuntu packages
+        id: restore-debs
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/debs
+          key: debs-${{ github.job }}-ubuntu-26.04-${{ hashFiles('.github/workflows/build-test.yml') }}-${{ steps.week.outputs.week }}
+          restore-keys: |
+            debs-${{ github.job }}-ubuntu-26.04-${{ hashFiles('.github/workflows/build-test.yml') }}-
+            debs-${{ github.job }}-ubuntu-26.04-
+
       - name: Install dependencies
         run: |
+          mkdir -p "$RUNNER_TEMP/debs/partial"
           sudo apt-get update
-          sudo apt-get install -y clang ninja-build libssl-dev zlib1g-dev libwebsocketpp-dev \
+          sudo apt-get install -y -o Dir::Cache::Archives="$RUNNER_TEMP/debs" \
+            clang ninja-build libssl-dev zlib1g-dev libwebsocketpp-dev \
             libboost-atomic-dev libboost-chrono-dev libboost-date-time-dev libboost-filesystem-dev \
             libboost-random-dev libboost-regex-dev libboost-system-dev libboost-thread-dev
+          sudo apt-get autoclean -o Dir::Cache::Archives="$RUNNER_TEMP/debs"
+          sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/debs"
+
+      - name: Save the Ubuntu packages
+        if: steps.restore-debs.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}/debs
+          key: ${{ steps.restore-debs.outputs.cache-primary-key }}
 
       - name: Configure
         run: >-
