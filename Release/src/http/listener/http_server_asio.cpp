@@ -796,9 +796,22 @@ will_deref_and_erase_t asio_server_connection::handle_headers()
         auto colon = header.find(':');
         if (colon != std::string::npos && colon != 0)
         {
-            auto name = utility::conversions::to_string_t(header.substr(0, colon));
-            auto value = utility::conversions::to_string_t(
-                header.substr(colon + 1, header.length() - (colon + 1))); // also exclude '\r'
+            utility::string_t name;
+            utility::string_t value;
+            try
+            {
+                name = utility::conversions::to_string_t(header.substr(0, colon));
+                value = utility::conversions::to_string_t(
+                    header.substr(colon + 1, header.length() - (colon + 1))); // also exclude '\r'
+            }
+            catch (const std::range_error& e) // invalid Unicode
+            {
+                currentRequest.reply(status_codes::BadRequest, e.what());
+                m_close = true;
+                (will_erase_from_parent_t) do_bad_response();
+                (will_deref_t) deref();
+                return will_deref_and_erase_t {};
+            }
             web::http::details::trim_whitespace(name);
             web::http::details::trim_whitespace(value);
 
