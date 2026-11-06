@@ -144,7 +144,9 @@ jobs:
           "commit=$(git -c safe.directory="$env:VCPKG_INSTALLATION_ROOT" -C "$env:VCPKG_INSTALLATION_ROOT" rev-parse HEAD)" >> $env:GITHUB_OUTPUT
           New-Item -ItemType Directory -Force "${{ runner.temp }}\vcpkg-cache" | Out-Null
 
-      - uses: actions/cache@v6
+      - name: Restore the vcpkg packages
+        id: restore-vcpkg
+        uses: actions/cache/restore@v6
         with:
           path: ${{ runner.temp }}\vcpkg-cache
           key: vcpkg-${{ matrix.os }}-${{ steps.vcpkg.outputs.commit }}-${{ hashFiles('.github/workflows/build-test.yml') }}
@@ -156,6 +158,14 @@ jobs:
           & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install
           zlib:x64-windows openssl:x64-windows
           boost-asio:x64-windows boost-date-time:x64-windows boost-regex:x64-windows
+
+      # Save the packages now, so that a later build or test failure does not lose them
+      - name: Save the vcpkg packages
+        if: steps.restore-vcpkg.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}\vcpkg-cache
+          key: ${{ steps.restore-vcpkg.outputs.cache-primary-key }}
 
       - name: Configure
         run: >-
