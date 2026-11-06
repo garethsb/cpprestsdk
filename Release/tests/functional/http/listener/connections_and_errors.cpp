@@ -553,6 +553,35 @@ SUITE(connections_and_errors)
     }
 
 #if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
+    TEST_FIXTURE(uri_address, invalid_chunk_size_request)
+    {
+        http_listener listener(m_uri);
+        listener.support([](http_request request) {
+            request.extract_string(true).then([request](pplx::task<utility::string_t> body) {
+                try
+                {
+                    request.reply(body.get() == U("hello") ? status_codes::OK : status_codes::InternalError);
+                }
+                catch (const http_exception&)
+                {
+                    request.reply(status_codes::BadRequest);
+                }
+            });
+        });
+        listener.open().wait();
+
+        const std::string headers = "POST / HTTP/1.1\r\nHost: localhost\r\nTransfer-Encoding: chunked\r\n\r\n";
+        VERIFY_ARE_EQUAL("HTTP/1.1 200 OK", send_raw_request(m_uri, headers + "3\r\nhel\r\n2\r\nlo\r\n0\r\n\r\n"));
+        VERIFY_ARE_EQUAL("HTTP/1.1 200 OK", send_raw_request(m_uri, headers + "5;ext=1\r\nhello\r\n0\r\n\r\n"));
+        VERIFY_ARE_EQUAL("HTTP/1.1 400 Bad Request", send_raw_request(m_uri, headers + "zz\r\nhello\r\n0\r\n\r\n"));
+        VERIFY_ARE_EQUAL("HTTP/1.1 400 Bad Request", send_raw_request(m_uri, headers + "-1\r\nhello\r\n0\r\n\r\n"));
+        VERIFY_ARE_EQUAL("HTTP/1.1 400 Bad Request",
+                         send_raw_request(m_uri, headers + "80000000\r\nhello\r\n0\r\n\r\n"));
+        VERIFY_ARE_EQUAL("HTTP/1.1 400 Bad Request", send_raw_request(m_uri, headers + "5\r\nhelloXX0\r\n\r\n"));
+
+        listener.close().wait();
+    }
+
     TEST_FIXTURE(uri_address, close_releases_port)
     {
         http_listener other(U("http://localhost:24570/"));

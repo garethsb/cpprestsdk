@@ -70,8 +70,21 @@ SUITE(request_stream_tests)
     TEST_FIXTURE(uri_address, test_chunked_transfer)
     {
         const size_t num_bytes = 1024 * 1024 * 10;
+        std::vector<uint8_t> buffer;
+        buffer.resize(num_bytes);
+        // 251 is prime, so the pattern does not repeat at any chunk or buffer size
+        for (size_t i = 0; i < num_bytes; ++i)
+        {
+            buffer[i] = static_cast<uint8_t>(i % 251);
+        }
+
         http_listener listener(m_uri);
-        listener.support([num_bytes](http_request request) { request.reply(status_codes::OK); });
+        listener.support([&buffer](http_request request) {
+            streams::container_buffer<std::vector<uint8_t>> body;
+            VERIFY_ARE_EQUAL(buffer.size(), request.body().read_to_end(body).get());
+            VERIFY_IS_TRUE(buffer == body.collection());
+            request.reply(status_codes::OK);
+        });
         listener.open().wait();
 
         ::http::client::http_client client(m_uri);
@@ -80,9 +93,6 @@ SUITE(request_stream_tests)
             client.request(methods::PUT, U("/"), buf.create_istream(), U("text/plain"));
 
         const size_t four_mb = 1024 * 1024 * 4;
-        std::vector<uint8_t> buffer;
-        buffer.resize(num_bytes);
-        memset(&buffer[0], (int)'A', num_bytes);
         size_t start = 0, end;
         while (start < num_bytes)
         {
@@ -92,7 +102,7 @@ SUITE(request_stream_tests)
         }
         buf.close(std::ios_base::out).wait();
 
-        response.wait();
+        VERIFY_ARE_EQUAL(status_codes::OK, response.get().status_code());
         listener.close().wait();
     }
 }
