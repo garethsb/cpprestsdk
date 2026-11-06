@@ -441,6 +441,20 @@ SUITE(pplx_task_options_tests)
         ev.wait();
     }
 
+    TEST(then_token_and_context_test)
+    {
+        pplx::cancellation_token_source cts;
+        cts.cancel();
+        bool ran = false;
+
+        auto t = pplx::create_task([]() {}).then(
+            [&ran]() { ran = true; },
+            pplx::task_options(cts.get_token(), pplx::task_continuation_context::use_default()));
+
+        VERIFY_ARE_EQUAL(pplx::canceled, t.wait());
+        VERIFY_IS_FALSE(ran);
+    }
+
 } // SUITE(pplx_task_options_tests)
 } // namespace PPLX
 } // namespace functional
