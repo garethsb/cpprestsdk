@@ -571,6 +571,8 @@ void asio_server_connection::shutdown()
 {
     m_close = true;
     boost::system::error_code ec;
+    // On Windows, shutdown does not complete a pending read, so cancel it
+    m_socket->cancel(ec);
     m_socket->shutdown(tcp::socket::shutdown_both, ec);
     get_request()._reply_if_not_already(status_codes::InternalError);
 }
