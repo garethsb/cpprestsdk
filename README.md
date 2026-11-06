@@ -49,6 +49,8 @@ add_executable(main main.cpp)
 target_link_libraries(main PRIVATE cpprestsdk::cpprest)
 ```
 
+Building from source needs a C++11 compiler and CMake 3.10 or later. Builds that use Boost need Boost 1.66 or later, and builds that use OpenSSL need OpenSSL 1.0.0 or later. With GCC, the WebSocket client needs GCC 4.9 or later. CI tests only current compilers and dependencies, so older versions may need fixes.
+
 ## What's in the SDK:
 
 *   Features - HTTP client/server, JSON, URI, asynchronous streams, WebSockets client, oAuth
