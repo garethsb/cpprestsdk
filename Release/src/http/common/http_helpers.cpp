@@ -127,6 +127,46 @@ bool validate_method(const utility::string_t& method)
     return true;
 }
 
+// Checks that the header name is a token, as defined by RFC 9110
+static bool validate_header_name(const utility::string_t& name)
+{
+    static const std::string token_symbols = "!#$%&'*+-.^_`|~";
+
+    if (name.empty()) return false;
+
+    for (const auto& ch : name)
+    {
+        size_t ch_sz = static_cast<size_t>(ch);
+        if (ch_sz >= 128) return false;
+
+        if (!isalnum(static_cast<int>(ch_sz)) && token_symbols.find(static_cast<char>(ch_sz)) == std::string::npos)
+            return false;
+    }
+
+    return true;
+}
+
+// Checks that a header value or reason phrase contains no CR, LF or NUL, any of which would end the line early
+bool validate_field_value(const utility::string_t& value)
+{
+    for (const auto& ch : value)
+    {
+        if (ch == U('\r') || ch == U('\n') || ch == U('\0')) return false;
+    }
+
+    return true;
+}
+
+bool validate_headers(const http_headers& headers)
+{
+    for (const auto& header : headers)
+    {
+        if (!validate_header_name(header.first) || !validate_field_value(header.second)) return false;
+    }
+
+    return true;
+}
+
 } // namespace details
 } // namespace http
 } // namespace web
