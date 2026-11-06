@@ -120,13 +120,27 @@ protected:
 
     virtual pplx::task<int_type> _putc(_CharType ch)
     {
-        int_type retVal = (this->write(&ch, 1) == 1) ? static_cast<int_type>(ch) : traits::eof();
-        return pplx::task_from_result<int_type>(retVal);
+        try
+        {
+            int_type retVal = (this->write(&ch, 1) == 1) ? static_cast<int_type>(ch) : traits::eof();
+            return pplx::task_from_result<int_type>(retVal);
+        }
+        catch (...)
+        {
+            return pplx::task_from_exception<int_type>(std::current_exception());
+        }
     }
 
     virtual pplx::task<size_t> _putn(const _CharType* ptr, size_t count)
     {
-        return pplx::task_from_result<size_t>(this->write(ptr, count));
+        try
+        {
+            return pplx::task_from_result<size_t>(this->write(ptr, count));
+        }
+        catch (...)
+        {
+            return pplx::task_from_exception<size_t>(std::current_exception());
+        }
     }
 
     /// <summary>
