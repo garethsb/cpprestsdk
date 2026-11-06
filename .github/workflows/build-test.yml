@@ -178,12 +178,17 @@ jobs:
         run: ctest --test-dir build --output-on-failure -L badssl
 
   windows:
-    name: ${{ matrix.os }} ${{ matrix.build_type }}
+    name: ${{ matrix.os }} ${{ matrix.build_type }}${{ matrix.http == 'asio' && ' Asio without WebSockets' || '' }}
     strategy:
       fail-fast: false
       matrix:
         os: [windows-2025-vs2026, windows-2022]
         build_type: [Debug, Release]
+        http: [default]
+        include:
+          - os: windows-2025-vs2026
+            build_type: Release
+            http: asio
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -234,6 +239,7 @@ jobs:
         run: >-
           cmake -B build -A x64
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake"
+          ${{ matrix.http == 'asio' && '-DCPPREST_HTTP_CLIENT_IMPL=asio -DCPPREST_HTTP_LISTENER_IMPL=asio -DCPPREST_EXCLUDE_WEBSOCKETS=ON' || '' }}
 
       - name: Build
         run: cmake --build build --config ${{ matrix.build_type }}

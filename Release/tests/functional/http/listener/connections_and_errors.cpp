@@ -310,7 +310,7 @@ SUITE(connections_and_errors)
         VERIFY_THROWS(listener.open().wait(), http_exception);
     }
 
-    TEST_FIXTURE(uri_address, try_port_already_in_use, "Ignore:Linux", "Bug 879077", "Ignore:Apple", "Bug 879077")
+    TEST_FIXTURE(uri_address, try_port_already_in_use, IGNORE_IF_HTTP_LISTENER_ASIO, "Bug 879077")
     {
         test_http_server::scoped_server scoped(m_uri);
         http_listener listener(m_uri);
@@ -450,12 +450,7 @@ SUITE(connections_and_errors)
         return errorCode;
     }
 
-    TEST_FIXTURE(uri_address,
-                 request_content_ready_timeout,
-                 "Ignore:Linux",
-                 "Unsuitable until 813276",
-                 "Ignore:Apple",
-                 "Unsuitable until 813276")
+    TEST_FIXTURE(uri_address, request_content_ready_timeout, IGNORE_IF_HTTP_LISTENER_ASIO, "Unsuitable until 813276")
     {
 #if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
         throw std::runtime_error(
