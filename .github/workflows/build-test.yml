@@ -9,6 +9,12 @@ on:
 permissions:
   contents: read
 
+# A new commit on a pull request or other branch cancels the run for the previous commit. Each run
+# on cpprest-lts has its own group, so none of them are cancelled or kept waiting.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/cpprest-lts' && github.run_id || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ubuntu:
     name: ${{ matrix.os }} ${{ matrix.build_type }}
@@ -190,7 +196,8 @@ jobs:
         run: git submodule update --init Release/libs/websocketpp
 
       # Building OpenSSL and Boost takes vcpkg about ten minutes, so keep the built packages
-      # for as long as the runner image has the same vcpkg
+      # for as long as the runner image has the same vcpkg. When this workflow changes, restore
+      # the packages from an older entry; vcpkg reuses those whose hashes are unchanged.
       - name: Get the vcpkg commit
         id: vcpkg
         run: |
@@ -203,6 +210,7 @@ jobs:
         with:
           path: ${{ runner.temp }}\vcpkg-cache
           key: vcpkg-${{ matrix.os }}-${{ steps.vcpkg.outputs.commit }}-${{ hashFiles('.github/workflows/build-test.yml') }}
+          restore-keys: vcpkg-${{ matrix.os }}-${{ steps.vcpkg.outputs.commit }}-
 
       # boost-interprocess is only for the streams tests
       - name: Install dependencies
