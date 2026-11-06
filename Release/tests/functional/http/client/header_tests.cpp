@@ -397,6 +397,40 @@ SUITE(outside_tests)
         client.request(overwritten_host_headers_request).get();
 #endif
     }
+
+    TEST_FIXTURE(uri_address, invalid_request_headers)
+    {
+        test_http_server::scoped_server scoped(m_uri);
+        http_client client(m_uri);
+
+        // Header names must be tokens, and values must not contain CR, LF or NUL, so that a header cannot add
+        // other header lines to the request
+        const std::vector<std::pair<utility::string_t, utility::string_t>> invalid_headers {
+            {U("X-Value"), U("a\r\nX-Injected: 1")},
+            {U("X-Value"), U("a\rb")},
+            {U("X-Value"), U("a\nb")},
+            {U("X-Value"), utility::string_t(U("a\0b"), 3)},
+            {U("X-Injected: 1\r\nX-Value"), U("a")},
+            {U("X Value"), U("a")},
+            {U(""), U("a")},
+        };
+        for (const auto& header : invalid_headers)
+        {
+            http_request msg(methods::GET);
+            msg.headers().add(header.first, header.second);
+            VERIFY_THROWS(client.request(msg).get(), http_exception);
+        }
+
+        // Tab in values and the less common token characters in names are still allowed
+        // except "'", which WinHTTP rejects
+        http_request msg(methods::GET);
+        msg.headers().add(U("X_Value!#$%&*+-.^`|~"), U("a\tb"));
+        scoped.server()->next_request().then([&](test_request* p_request) {
+            http_asserts::assert_test_request_contains_headers(p_request, msg.headers());
+            p_request->reply(200);
+        });
+        http_asserts::assert_response_equals(client.request(msg).get(), status_codes::OK);
+    }
 } // SUITE(header_tests)
 
 } // namespace client

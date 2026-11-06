@@ -219,6 +219,39 @@ SUITE(header_tests)
 
         listener.close().wait();
     }
+
+    TEST_FIXTURE(uri_address, invalid_response_headers)
+    {
+        http_listener listener(m_uri);
+        listener.open().wait();
+        test_http_client::scoped_client client(m_uri);
+        test_http_client* p_client = client.client();
+
+        // No http_request/response classes can be around for close to complete.
+        {
+            // Header names must be tokens, and values and the reason phrase must not contain CR, LF or NUL, so
+            // that the application cannot add other header lines to the response
+            std::vector<http_response> invalid_responses(3, http_response(status_codes::OK));
+            invalid_responses[0].headers().add(U("X-Value"), U("a\r\nX-Injected: 1"));
+            invalid_responses[1].headers().add(U("X-Injected: 1\r\nX-Value"), U("a"));
+            invalid_responses[2].set_reason_phrase(U("OK\r\nX-Injected: 1"));
+            for (const auto& response : invalid_responses)
+            {
+                listener.support([&](http_request request) {
+                    VERIFY_THROWS(request.reply(response).get(), http_exception);
+                });
+                VERIFY_ARE_EQUAL(0u, p_client->request(methods::GET, U("")));
+                p_client->next_response()
+                    .then([&](test_response* p_response) {
+                        VERIFY_ARE_EQUAL(status_codes::InternalError, p_response->m_status_code);
+                        VERIFY_IS_TRUE(p_response->m_headers.end() == p_response->m_headers.find(U("X-Injected")));
+                    })
+                    .wait();
+            }
+        }
+
+        listener.close().wait();
+    }
 }
 
 } // namespace listener

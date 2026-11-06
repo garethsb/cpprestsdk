@@ -15,6 +15,7 @@
 
 #include "stdafx.h"
 
+#include "../common/internal_http_helpers.h"
 #include "http_client_impl.h"
 
 namespace web
@@ -202,6 +203,10 @@ void _http_client_communicator::async_send_request_impl(const std::shared_ptr<re
     pplx::create_task([self, request] {
         try
         {
+            if (!::web::http::details::validate_headers(request->m_request.headers()))
+            {
+                throw http_exception(U("The request headers are invalid."));
+            }
             self->send_request(request);
         }
         catch (...)

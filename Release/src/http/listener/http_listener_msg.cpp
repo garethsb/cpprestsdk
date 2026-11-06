@@ -35,9 +35,22 @@ pplx::task<void> details::_http_request::_reply_impl(http_response response)
 
     if (m_server_context && server_api)
     {
+        // Send 500 Internal Server Error instead of a response whose headers could add other header lines
+        const bool valid = validate_headers(response.headers()) && validate_field_value(response.reason_phrase());
+        if (!valid)
+        {
+            response = http_response(status_codes::InternalError);
+            response.set_reason_phrase(get_default_reason_phrase(status_codes::InternalError));
+        }
+
         // Add a task-based continuation so no exceptions thrown from the task go 'unobserved'.
         response._set_server_context(std::move(m_server_context));
         response_completed = server_api->respond(response);
+        if (!valid)
+        {
+            response_completed =
+                response_completed.then([]() -> void { throw http_exception(U("The response headers are invalid.")); });
+        }
         response_completed.then([](pplx::task<void> t) {
             try
             {

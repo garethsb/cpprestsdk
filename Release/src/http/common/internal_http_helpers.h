@@ -13,6 +13,8 @@ namespace web
 {
 namespace http
 {
+class http_headers;
+
 namespace details
 {
 /// <summary>
@@ -88,6 +90,12 @@ void trim_whitespace(std::basic_string<Char>& str)
 }
 
 bool validate_method(const utility::string_t& method);
+
+// Checks that each header name is a token and that no header value contains CR, LF or NUL, so that a header
+// cannot add other header lines when the message is sent
+bool validate_headers(const http_headers& headers);
+
+bool validate_field_value(const utility::string_t& value);
 
 } // namespace details
 } // namespace http
