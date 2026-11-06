@@ -137,7 +137,8 @@ jobs:
         run: git submodule update --init Release/libs/websocketpp
 
       # Building OpenSSL and Boost takes vcpkg about ten minutes, so keep the built packages
-      # for as long as the runner image has the same vcpkg
+      # for as long as the runner image has the same vcpkg. When this workflow changes, restore
+      # the packages from an older entry; vcpkg reuses those whose hashes are unchanged.
       - name: Get the vcpkg commit
         id: vcpkg
         run: |
@@ -150,6 +151,7 @@ jobs:
         with:
           path: ${{ runner.temp }}\vcpkg-cache
           key: vcpkg-${{ matrix.os }}-${{ steps.vcpkg.outputs.commit }}-${{ hashFiles('.github/workflows/build-test.yml') }}
+          restore-keys: vcpkg-${{ matrix.os }}-${{ steps.vcpkg.outputs.commit }}-
 
       # boost-interprocess is only for the streams tests
       - name: Install dependencies
