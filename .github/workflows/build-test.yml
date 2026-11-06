@@ -9,6 +9,12 @@ on:
 permissions:
   contents: read
 
+# A new commit on a pull request or other branch cancels the run for the previous commit. Each run
+# on cpprest-lts has its own group, so none of them are cancelled or kept waiting.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/cpprest-lts' && github.run_id || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ubuntu:
     name: ${{ matrix.os }} ${{ matrix.build_type }}
