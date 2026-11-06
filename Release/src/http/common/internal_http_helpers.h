@@ -97,6 +97,17 @@ bool validate_headers(const http_headers& headers);
 
 bool validate_field_value(const utility::string_t& value);
 
+// Removes the port, if any, from a Host header value, keeping the brackets around an IPv6 address as uri::host() does
+inline utility::string_t host_without_port(const utility::string_t& host)
+{
+    if (!host.empty() && host[0] == _XPLATSTR('['))
+    {
+        const auto end = host.find(_XPLATSTR(']'));
+        return end != utility::string_t::npos ? host.substr(0, end + 1) : host;
+    }
+    return host.substr(0, host.find(_XPLATSTR(':')));
+}
+
 } // namespace details
 } // namespace http
 } // namespace web

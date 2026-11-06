@@ -92,18 +92,16 @@ std::string calc_cn_host(const web::http::uri& baseUri, const web::http::http_he
     std::string result;
     if (baseUri.scheme() == U("https"))
     {
-        const utility::string_t* encResult;
         const auto hostHeader = requestHeaders.find(_XPLATSTR("Host"));
         if (hostHeader == requestHeaders.end())
         {
-            encResult = &baseUri.host();
+            result = utility::conversions::to_utf8string(baseUri.host());
         }
         else
         {
-            encResult = &hostHeader->second;
+            result = utility::conversions::to_utf8string(web::http::details::host_without_port(hostHeader->second));
         }
 
-        result = utility::conversions::to_utf8string(*encResult);
         utility::details::inplace_tolower(result);
     }
 

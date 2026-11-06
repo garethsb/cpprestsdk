@@ -11,6 +11,7 @@
 
 #include "stdafx.h"
 
+#include "../../../src/http/common/internal_http_helpers.h"
 #include "cpprest/details/http_helpers.h"
 
 using namespace web::http;
@@ -430,6 +431,18 @@ SUITE(outside_tests)
             p_request->reply(200);
         });
         http_asserts::assert_response_equals(client.request(msg).get(), status_codes::OK);
+    }
+
+    TEST(host_without_port)
+    {
+        using web::http::details::host_without_port;
+        VERIFY_ARE_EQUAL(U("example.com"), host_without_port(U("example.com")));
+        VERIFY_ARE_EQUAL(U("example.com"), host_without_port(U("example.com:8443")));
+        VERIFY_ARE_EQUAL(U("example.com"), host_without_port(U("example.com:")));
+        VERIFY_ARE_EQUAL(U("192.0.2.1"), host_without_port(U("192.0.2.1:8443")));
+        VERIFY_ARE_EQUAL(U("[2001:db8::1]"), host_without_port(U("[2001:db8::1]")));
+        VERIFY_ARE_EQUAL(U("[2001:db8::1]"), host_without_port(U("[2001:db8::1]:8443")));
+        VERIFY_ARE_EQUAL(U(""), host_without_port(U("")));
     }
 } // SUITE(header_tests)
 

@@ -1107,7 +1107,7 @@ protected:
             const auto hostHeader = headers.find(_XPLATSTR("Host"));
             if (hostHeader != headers.end())
             {
-                const auto& requestHost = hostHeader->second;
+                const auto requestHost = web::http::details::host_without_port(hostHeader->second);
                 if (!utility::details::str_iequal(requestHost, m_uri.host()))
                 {
                     winhttp_context->install_custom_cn_check(requestHost);
