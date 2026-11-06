@@ -17,6 +17,13 @@
 #include "cpprest/json.h"
 #include "cpprest/uri_builder.h"
 
+// Other headers, such as curl.h, use __has_declspec_attribute(dllimport), which Clang 14 and later reject
+// if dllimport is defined as nothing
+#if defined(__has_declspec_attribute)
+#if __has_declspec_attribute(dllimport)
+#endif
+#endif
+
 namespace tests
 {
 namespace functional
