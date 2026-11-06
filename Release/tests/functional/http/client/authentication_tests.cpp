@@ -58,7 +58,7 @@ namespace client
 {
 SUITE(authentication_tests)
 {
-    TEST_FIXTURE(uri_address, auth_no_data, "Ignore:Linux", "89", "Ignore:Apple", "89")
+    TEST_FIXTURE(uri_address, auth_no_data, IGNORE_IF_HTTP_CLIENT_ASIO, "89")
     {
         pplx::task<void> t, t2;
         {
@@ -115,7 +115,7 @@ SUITE(authentication_tests)
 
 // TFS 648783
 #ifndef __cplusplus_winrt
-    TEST_FIXTURE(uri_address, proxy_auth_known_contentlength, "Ignore:Linux", "88", "Ignore:Apple", "88")
+    TEST_FIXTURE(uri_address, proxy_auth_known_contentlength, IGNORE_IF_HTTP_CLIENT_ASIO, "88")
     {
         pplx::task<void> t, t2;
         {
@@ -169,7 +169,7 @@ SUITE(authentication_tests)
     }
 #endif
 
-    TEST_FIXTURE(uri_address, proxy_auth_noseek, "Ignore:Linux", "88", "Ignore:Apple", "88")
+    TEST_FIXTURE(uri_address, proxy_auth_noseek, IGNORE_IF_HTTP_CLIENT_ASIO, "88")
     {
         web::http::uri uri(U("http://localhost:24567/"));
         test_http_server::scoped_server scoped(uri);
@@ -200,7 +200,7 @@ SUITE(authentication_tests)
 
 // Must specify content length with winrt client, so this test case isn't possible.
 #ifndef __cplusplus_winrt
-    TEST_FIXTURE(uri_address, proxy_auth_unknown_contentlength, "Ignore:Linux", "88", "Ignore:Apple", "88")
+    TEST_FIXTURE(uri_address, proxy_auth_unknown_contentlength, IGNORE_IF_HTTP_CLIENT_ASIO, "88")
     {
         pplx::task<void> t;
         {
@@ -275,7 +275,7 @@ SUITE(authentication_tests)
     // Fails on WinRT due to TFS 648278
     // Accessing a server that supports auth, but returns 401, even after the user has provided valid creds
     // We're making sure the error is reported properly, and the response data from the second response is received
-    TEST_FIXTURE(uri_address, error_after_valid_credentials, "Ignore:Linux", "89", "Ignore:Apple", "89")
+    TEST_FIXTURE(uri_address, error_after_valid_credentials, IGNORE_IF_HTTP_CLIENT_ASIO, "89")
     {
         pplx::task<void> t;
         {
@@ -477,7 +477,7 @@ SUITE(authentication_tests)
     }
 #endif // __cplusplus_winrt
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
 #if !defined(__cplusplus_winrt)
     TEST_FIXTURE(server_properties, set_user_options, "Requires", "Server;UserName;Password")
     {
@@ -633,7 +633,7 @@ SUITE(authentication_tests)
         http_client client(m_uri, config);
         VERIFY_THROWS(client.request(methods::GET).get(), std::runtime_error);
     }
-#endif // _WIN32
+#endif // defined(_WIN32) && !defined(CPPREST_FORCE_HTTP_CLIENT_ASIO)
 
     // Fix for 522831 AV after failed authentication attempt
     // apis.live.net now returns 400 Bad Request instead of 401 Unauthorized
