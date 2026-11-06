@@ -151,6 +151,7 @@ jobs:
           path: ${{ runner.temp }}\vcpkg-cache
           key: vcpkg-${{ matrix.os }}-${{ steps.vcpkg.outputs.commit }}-${{ hashFiles('.github/workflows/build-test.yml') }}
 
+      # boost-interprocess is only for the streams tests
       - name: Install dependencies
         env:
           VCPKG_BINARY_SOURCES: clear;files,${{ runner.temp }}\vcpkg-cache,readwrite
@@ -158,6 +159,7 @@ jobs:
           & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install
           zlib:x64-windows openssl:x64-windows
           boost-asio:x64-windows boost-date-time:x64-windows boost-regex:x64-windows
+          boost-interprocess:x64-windows
 
       # Save the packages now, so that a later build or test failure does not lose them
       - name: Save the vcpkg packages
