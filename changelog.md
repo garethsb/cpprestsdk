@@ -1,3 +1,44 @@
+cpprestsdk (2.10.20+cpprest-lts)
+The first release of the cpprest-lts fork, https://github.com/cpprest-lts/cpprestsdk.
+cpprest-lts#N refers to a pull request in the fork, and #N to an issue or pull request in microsoft/cpprestsdk.
+Security:
+* cpprest-lts#55 Reject header names and values that would add other header lines (fixes #761)
+* cpprest-lts#49 Validate chunk sizes in the Asio HTTP listener
+* cpprest-lts#50 Fix a memory leak in zero_memory_deleter on platforms other than Windows (#1808)
+* cpprest-lts#23 Reject invalid surrogate escapes in JSON strings
+Bug fixes:
+* cpprest-lts#2, cpprest-lts#25 Fix races when closing an Asio http_listener, and release its port
+* cpprest-lts#26 Reply 400 Bad Request to invalid UTF-8 in http.sys listener requests
+* cpprest-lts#53 Fix the Windows link failure with the Asio client and listener, without WebSockets (#1466),
+  and fix closing the Asio listener and invalid UTF-8 request headers on Windows
+* cpprest-lts#56 Fix formatting the last day of a 400-year cycle (#1767)
+* cpprest-lts#57 Fix task_options(cancellation_token, task_continuation_context) ignoring the token (#1824)
+* cpprest-lts#58 Return write errors from container_buffer in the task (fixes #1453)
+* cpprest-lts#59 Remove the port from the Host header before checking the certificate name (fixes #1790 and #1471)
+* cpprest-lts#61 Don't index an empty buffer for the WinHTTP response headers (fixes #1212)
+Build:
+* cpprest-lts#17, cpprest-lts#18 Build with Boost 1.87 and later, and configure with Boost 1.89 and later
+* cpprest-lts#19 Build with MSVC 14.51 (Visual Studio 2026)
+* cpprest-lts#20 Fix GCC 13 format truncation warnings, and include <boost/bind/bind.hpp> (#1706)
+* cpprest-lts#27 Build streams.h without std::char_traits<uint8_t>, which libc++ 19 removed
+* cpprest-lts#28 Find OpenSSL with find_package on every platform
+* cpprest-lts#36 Define json::value's unique_ptr constructor and destructor out of line
+* cpprest-lts#44 Don't force libc++ when building with Clang on macOS
+* cpprest-lts#42 Use the websocketpp::websocketpp target when the package defines one
+* cpprest-lts#45 Require CMake 3.10
+* cpprest-lts#48 Use websocketpp 0.8.4+cpprest-lts as the submodule
+* cpprest-lts#51 Don't define dllimport as nothing on platforms other than Windows (#1723)
+* Don't capture this implicitly through [=] in public headers, which C++20 deprecates (#1827)
+* Include <chrono> for system_clock (#1811)
+Tests, CI and documentation:
+* cpprest-lts#3, cpprest-lts#22, cpprest-lts#47 Add Asio http_listener close tests, move test ports out of the
+  ephemeral port ranges, and fix Clang warnings in the tests
+* cpprest-lts#16, cpprest-lts#31, cpprest-lts#37, cpprest-lts#39, cpprest-lts#41, cpprest-lts#43, cpprest-lts#52,
+  cpprest-lts#54 Build and test on Ubuntu, macOS and Windows with GitHub Actions
+* cpprest-lts#30, cpprest-lts#32, cpprest-lts#33, cpprest-lts#34, cpprest-lts#35, cpprest-lts#60 Describe this
+  fork in the README and SECURITY.md, and state the minimum versions
+-- cpprest-lts, FRI, 6 Nov 2026
+
 cpprestsdk (2.10.19)
 * PR#1982 make Uri.is_host_loopback() only return true for localhost and 127.0.0.1 exactly. 
   The old behavior could potentially return "true" for URLs that were not, in fact, local,
