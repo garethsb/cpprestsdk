@@ -2408,6 +2408,14 @@ SUITE(memstream_tests)
         buffer.release(temp, size);
     }
 
+    TEST(container_buffer_putn_too_large)
+    {
+        container_buffer<std::string> buffer;
+        const char data = 'a';
+        auto t = buffer.putn_nocopy(&data, buffer.collection().max_size() + 1);
+        VERIFY_THROWS(t.get(), std::length_error);
+    }
+
     TEST(bytestream_length)
     {
         // test byte stream
